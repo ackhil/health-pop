@@ -16,8 +16,13 @@ function AuthGate() {
   const send = async () => {
     setErr("");
     try {
+      const inviterName = typeof window !== "undefined" ? localStorage.getItem("pendingInviteName") : null;
       const { error } = await supabase.auth.signInWithOtp({
-        email, options: { emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined },
+        email,
+        options: {
+          emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
+          data: inviterName ? { inviter_name: inviterName } : undefined,
+        },
       });
       if (error) throw error;
       setSent(true);
@@ -78,6 +83,7 @@ export default function App() {
       const code = localStorage.getItem("pendingInvite");
       if (code) {
         localStorage.removeItem("pendingInvite");
+        localStorage.removeItem("pendingInviteName");
         const { data: res } = await supabase.rpc("accept_invite", { invite_code: code });
         if (res === "ok") flash("🤝 Friend added!");
       }

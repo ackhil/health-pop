@@ -17,6 +17,8 @@ export default function InvitePage() {
         if (!data.session) {
           // remember the invite, then send them to sign in
           localStorage.setItem("pendingInvite", code);
+          const { data: inviterName } = await supabase.rpc("invite_inviter_first_name", { invite_code: code });
+          if (inviterName) localStorage.setItem("pendingInviteName", inviterName);
           setStatus("signin");
           return;
         }

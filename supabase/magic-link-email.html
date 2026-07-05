@@ -1,0 +1,55 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html dir="ltr" lang="en">
+<head>
+<meta content="width=device-width" name="viewport"/>
+<meta content="text/html; charset=UTF-8" http-equiv="Content-Type"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta name="x-apple-disable-message-reformatting"/>
+<meta content="telephone=no,address=no,email=no,date=no,url=no" name="format-detection"/>
+<meta name="color-scheme" content="light"/>
+<meta name="supported-color-schemes" content="light"/>
+<title>Sign in to Health Pop</title>
+</head>
+<body dir="ltr" lang="en" style="background-color:#ffffff;margin:0;padding:0">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all">Your one-tap sign-in link — expires in 1 hour.</div>
+<table border="0" width="100%" cellPadding="0" cellSpacing="0" role="presentation" align="center">
+<tbody><tr><td dir="ltr" lang="en" style="background-color:#ffffff">
+<table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="max-width:600px;width:100%;color:#000000;background-color:#ffffff">
+<tbody><tr style="width:100%"><td style="padding:0">
+<div style="margin:0;padding:32px 16px;background:#EFEAF4;font-family:Arial,Helvetica,sans-serif">
+<div style="margin:0 auto;padding:32px 28px;max-width:440px;background:#ffffff;border-radius:24px;text-align:center">
+
+<table border="0" cellPadding="0" cellSpacing="0" role="presentation" style="margin:0 auto 16px">
+<tbody><tr style="margin:0;padding:0">
+<td align="center" style="margin:0;padding:0;background:#B5EC9E;border-radius:50%;width:52px;height:52px;font-size:26px;text-align:center">😊</td>
+<td style="width:10px">&nbsp;</td>
+<td align="center" style="margin:0;padding:0;background:#F5A45E;border-radius:14px;width:52px;height:52px;font-size:26px;text-align:center">😉</td>
+<td style="width:10px">&nbsp;</td>
+<td align="center" style="margin:0;padding:0;background:#C7B6F2;border-radius:50%;width:52px;height:52px;font-size:26px;text-align:center">😌</td>
+</tr></tbody></table>
+
+<h1 style="margin:0 0 8px;padding:0;font-size:26px;line-height:32px;font-weight:800;color:#141414">Welcome to better health 💛</h1>
+{{ if .Data.inviter_name }}
+<p style="margin:0 0 4px;padding:0;font-size:15px;line-height:22px;color:#141414;font-weight:800">{{ .Data.inviter_name }} invited you to Health Pop 💛</p>
+<p style="margin:0 0 20px;padding:0;font-size:14px;line-height:20px;color:#6E6B78;font-weight:600">They'd love to go on a healthier journey with you :)</p>
+{{ else }}
+<p style="margin:0 0 24px;padding:0;font-size:15px;line-height:22px;color:#6E6B78;font-weight:600">One tap and you're in — no passwords, ever.</p>
+{{ end }}
+
+<table border="0" cellPadding="0" cellSpacing="0" role="presentation" style="margin:0 auto">
+<tbody><tr><td align="center" style="border-radius:999px;background:#141414">
+<a href="{{ .ConfirmationURL }}" rel="noopener noreferrer nofollow" target="_blank"
+   style="display:inline-block;color:#ffffff;text-decoration:none;font-size:16px;line-height:20px;font-weight:800;padding:16px 36px;min-height:20px">
+  Sign in to Health Pop ✨
+</a>
+</td></tr></tbody></table>
+
+<p style="margin:24px 0 0;padding:0;font-size:12px;line-height:18px;color:#6E6B78;font-weight:600">Link expires in 1 hour. Didn't request this? Just ignore it. 🔒</p>
+</div>
+<p style="margin:14px 0 0;padding:0;text-align:center;font-size:11px;line-height:16px;color:#6E6B78">Health Pop · your health, one log at a time</p>
+<p style="margin:6px 0 0;padding:0;text-align:center;font-size:11px;line-height:16px;color:#6E6B78">Sent to {{ .Email }} because someone requested a sign-in link for this address.</p>
+</div>
+</td></tr></tbody></table>
+</td></tr></tbody></table>
+</body>
+</html>

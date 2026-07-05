@@ -109,6 +109,14 @@ begin
 end;
 $$ language plpgsql security definer;
 
+-- ---------- invite lookup: inviter's first name for the sign-in email (no auth required) ----------
+create or replace function invite_inviter_first_name(invite_code text) returns text as $$
+  select split_part(p.display_name, ' ', 1)
+  from invites i
+  join public_profiles p on p.user_id = i.inviter
+  where i.code = invite_code and i.used_by is null and i.expires_at > now();
+$$ language sql security definer stable;
+
 -- ---------- coach rate limit (atomic increment, returns today's count) ----------
 create or replace function increment_coach_usage() returns int as $$
 declare new_count int;
