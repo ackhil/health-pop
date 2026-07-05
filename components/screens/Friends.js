@@ -3,6 +3,16 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
 import { C, Face, Pill, Tile, EvoAvatar, dstr } from "../design";
 
+function FriendAvatar({ friend, size }) {
+  const [url, setUrl] = useState(null);
+  useEffect(() => {
+    if (!friend.photoPath) { setUrl(null); return; }
+    supabase.storage.from("attachments").createSignedUrl(friend.photoPath, 3600).then(({ data }) => data && setUrl(data.signedUrl));
+  }, [friend.photoPath]);
+  if (url) return <img src={url} alt={friend.name} style={{ width: size, height: size, borderRadius: 999, objectFit: "cover", border: `2px solid ${C.line}` }} />;
+  return <EvoAvatar stage={friend.stage} size={size} anim="none" />;
+}
+
 export default function Friends({ session, flash }) {
   const [friends, setFriends] = useState([]);
   const [inviteUrl, setInviteUrl] = useState("");
@@ -39,7 +49,7 @@ export default function Friends({ session, flash }) {
       if (!(theirDates.has(dstr(md)) && mySums.has(dstr(md)))) md.setDate(md.getDate() - 1);
       while (theirDates.has(dstr(md)) && mySums.has(dstr(md))) { mutual++; md.setDate(md.getDate() - 1); }
       const pub = (pubs || []).find((p) => p.user_id === id) || {};
-      return { id, name: pub.display_name || "Friend", stage: pub.evo_stage || 0, streak, mutual, loggedToday, todayMood };
+      return { id, name: pub.display_name || "Friend", stage: pub.evo_stage || 0, photoPath: pub.photo_path || null, streak, mutual, loggedToday, todayMood };
     }).sort((a, b) => b.mutual - a.mutual);
     setFriends(list);
   };
@@ -56,6 +66,17 @@ export default function Friends({ session, flash }) {
   const nudge = async (friendId, name) => {
     const { error } = await supabase.from("nudges").insert({ from_id: uid, to_id: friendId });
     flash(error ? `Already nudged ${name} today 😅` : `👋 Nudged ${name}!`);
+    if (!error) {
+      try {
+        await fetch("/api/notify-nudge", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ toUserId: friendId }),
+        });
+      } catch (e) {
+        console.error("Nudge notification email failed:", e);
+      }
+    }
   };
 
   const best = friends[0];
@@ -76,7 +97,7 @@ export default function Friends({ session, flash }) {
           <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 14 }}>
             <EvoAvatar stage={3} size={58} />
             <div style={{ fontSize: 34, fontWeight: 900 }}>🔥 {best.mutual}</div>
-            <EvoAvatar stage={best.stage} size={58} />
+            <FriendAvatar friend={best} size={58} />
           </div>
           <div style={{ fontSize: 16, fontWeight: 900, marginTop: 8 }}>You & {best.name}</div>
           <div style={{ fontSize: 13, color: C.sub, fontWeight: 700 }}>{best.mutual} days logging together</div>
@@ -90,7 +111,7 @@ export default function Friends({ session, flash }) {
 
       {friends.slice(best ? 1 : 0).map((f) => (
         <div key={f.id} style={{ background: "#fff", border: `2px solid ${C.line}`, borderRadius: 20, padding: "12px 14px", marginBottom: 8, display: "flex", alignItems: "center", gap: 12 }}>
-          <EvoAvatar stage={f.stage} size={44} anim="none" />
+          <FriendAvatar friend={f} size={44} />
           <div style={{ fontSize: 16, fontWeight: 900 }}>{f.name}</div>
           <div style={{ marginLeft: "auto", textAlign: "right" }}>
             <div style={{ fontSize: 16, fontWeight: 900 }}>🔥 {f.streak}</div>

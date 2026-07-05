@@ -122,6 +122,7 @@ export default function App() {
       user_id: session.user.id,
       display_name: next.name || "Friend",
       evo_stage: stageFromStreaks(exStreak, foodStreak, logStreak),
+      photo_path: next.photoPath || null,
     });
     flash(error ? "Save failed — try again" : "Saved ✓");
   };

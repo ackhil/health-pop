@@ -121,6 +121,71 @@ export const Callout = ({ children, onDismiss, style }) => (
   </div>
 );
 
+/* Compact markdown renderer for Coach output — headers, bullets, tables, bold. Not full CommonMark:
+   scoped to what the Coach prompt is asked to produce, not arbitrary user markdown. */
+export const Markdown = ({ text }) => {
+  const lines = (text || "").split("\n");
+  const isTableRow = (l) => /^\s*\|.*\|\s*$/.test(l);
+  const isSeparatorRow = (l) => /^\s*\|[\s:|-]+\|\s*$/.test(l);
+  const isBullet = (l) => /^\s*[-*•]\s+/.test(l);
+  const isHeading = (l) => /^#{1,4}\s+/.test(l);
+
+  const blocks = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (isTableRow(line)) {
+      const tableLines = [];
+      while (i < lines.length && isTableRow(lines[i])) { tableLines.push(lines[i]); i++; }
+      const rows = tableLines.filter((l) => !isSeparatorRow(l)).map((l) => l.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim()));
+      if (rows.length) blocks.push({ type: "table", rows });
+      continue;
+    }
+    if (isBullet(line)) {
+      const items = [];
+      while (i < lines.length && isBullet(lines[i])) { items.push(lines[i].replace(/^\s*[-*•]\s+/, "")); i++; }
+      blocks.push({ type: "list", items });
+      continue;
+    }
+    if (isHeading(line)) { blocks.push({ type: "heading", text: line.replace(/^#{1,4}\s+/, "") }); i++; continue; }
+    if (line.trim() === "") { i++; continue; }
+    const paraLines = [];
+    while (i < lines.length && lines[i].trim() !== "" && !isBullet(lines[i]) && !isHeading(lines[i]) && !isTableRow(lines[i])) { paraLines.push(lines[i]); i++; }
+    blocks.push({ type: "para", text: paraLines.join(" ") });
+  }
+
+  const inline = (str) => str.split(/(\*\*[^*]+\*\*)/g).map((p, idx) =>
+    p.startsWith("**") && p.endsWith("**") ? <strong key={idx}>{p.slice(2, -2)}</strong> : <React.Fragment key={idx}>{p}</React.Fragment>);
+
+  return (
+    <div>
+      {blocks.map((b, idx) => {
+        if (b.type === "heading") return <div key={idx} style={{ fontSize: 15, fontWeight: 900, marginTop: idx ? 14 : 0, marginBottom: 6 }}>{inline(b.text)}</div>;
+        if (b.type === "list") return (
+          <ul key={idx} style={{ margin: "0 0 10px", paddingLeft: 20 }}>
+            {b.items.map((it, j) => <li key={j} style={{ fontSize: 14.5, fontWeight: 700, lineHeight: 1.55, marginBottom: 4 }}>{inline(it)}</li>)}
+          </ul>
+        );
+        if (b.type === "table") return (
+          <table key={idx} style={{ width: "100%", borderCollapse: "collapse", marginBottom: 10 }}>
+            <tbody>
+              {b.rows.map((row, r) => (
+                <tr key={r}>
+                  {row.map((cell, c) => {
+                    const Tag = r === 0 ? "th" : "td";
+                    return <Tag key={c} style={{ border: "1px solid rgba(0,0,0,.12)", padding: "6px 8px", fontSize: 13, fontWeight: r === 0 ? 900 : 700, textAlign: "left", background: r === 0 ? "rgba(0,0,0,.06)" : "transparent" }}>{inline(cell)}</Tag>;
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        );
+        return <p key={idx} style={{ fontSize: 14.5, fontWeight: 700, lineHeight: 1.6, margin: "0 0 10px" }}>{inline(b.text)}</p>;
+      })}
+    </div>
+  );
+};
+
 /* streak helpers */
 export const dstr = (d) => d.toISOString().slice(0, 10);
 export const computeStreak = (logs, pred) => {

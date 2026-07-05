@@ -5,13 +5,13 @@ import { createClient } from "@supabase/supabase-js";
 const DAILY_COACH_LIMIT = 30;
 
 const MODES = {
-  weekly: `Give personalized weekly recommendations. Structure:
-✅ WINS — 2-3 specific positives from their data
-⚠️ WATCH — trends worth attention, referencing actual numbers and listed conditions/medications
-🎯 DO THIS WEEK — 3-5 concrete actions tied to their goals and habits
-Keep each line short and icon-led.`,
-  exercise: `Create a simple weekly exercise plan (4 sessions max) tailored to their stated goal, fitness level implied by their logs, and any conditions (adapt intensity for them). Format: Day — emoji — session name — one short safety/pacing note. Keep it scannable.`,
-  meals: `Create a one-day meal template (breakfast, lunch, snack, dinner) matching their goal (calorie direction), respecting ALL allergies and conditions. Format: emoji — meal — one-line why. Include approx total kcal. Keep it scannable.`,
+  weekly: `Give personalized weekly recommendations as three sections, each a "## " heading followed by a bullet list:
+## ✅ Wins — 2-3 specific positives from their data
+## ⚠️ Watch — trends worth attention, referencing actual numbers and listed conditions/medications
+## 🎯 Do this week — 3-5 concrete actions tied to their goals and habits
+Each bullet under 12 words.`,
+  exercise: `Create a simple weekly exercise plan (4 sessions max) tailored to their stated goal, fitness level implied by their logs, and any conditions (adapt intensity for them). Format as a markdown table with a header row: | Day | Session | Note |, one row per session, Note = a short safety/pacing tip.`,
+  meals: `Create a one-day meal template matching their goal (calorie direction), respecting ALL allergies and conditions. Format as a markdown table with a header row: | Meal | What | Why |, one row per meal (breakfast/lunch/snack/dinner). Add one bullet below the table with the approx total kcal.`,
 };
 
 export async function POST(req) {
@@ -42,7 +42,7 @@ export async function POST(req) {
     const recent = (logs || []).slice(-14);
 
     const task = question
-      ? `The user's question: "${question}"\nAnswer using their profile and log data. Be specific — reference their actual numbers and conditions.`
+      ? `The user's question: "${question}"\nAnswer using their profile and log data. Be specific — reference their actual numbers and conditions. Use a markdown table if you're comparing options, or a short bullet list if giving steps — avoid long paragraphs.`
       : MODES[mode] || MODES.weekly;
 
     const prompt = `You are a holistic health and fitness coach inside a mobile app. Below is the user's health profile and last ${recent.length} daily logs.
@@ -55,7 +55,7 @@ ${JSON.stringify(recent, null, 2)}
 
 ${task}
 
-Be warm, direct, minimal text, icon-friendly. Account for conditions, medications, allergies. Under 300 words. End with one short line: general wellness guidance, not medical advice.`;
+Formatting rules: use markdown — "## " for section headers, "- " for bullets, "| |" tables (with a header row and a "---" separator row) for anything structured or comparative. No long paragraphs. Be warm, direct, icon-friendly. Account for conditions, medications, allergies. Under 200 words total. End with one short separate line: general wellness guidance, not medical advice.`;
 
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",

@@ -1,6 +1,6 @@
 # Health Pop Roadmap
 
-**Last updated:** 2026-07-05
+**Last updated:** 2026-07-06
 **Status legend:** ✅ Done &nbsp; 🔧 In progress &nbsp; ⬜ Not started
 
 This file is the source of truth for what we're building next and in what order. Rule for future work: **before starting something new, check it against this file.** If a request doesn't map to a Now/Next/Later item, that's not a blocker — just flag it, do the work if the user still wants it, and then ask whether this file should be updated to reflect the new priority. Revisit and re-rank this file whenever priorities shift, not on a fixed schedule.
@@ -29,7 +29,8 @@ This file is the source of truth for what we're building next and in what order.
 | Timezone / day-boundary rule for streaks | Backend | **Needs a decision from the founder.** Mutual streaks, nudge cooldowns, and midnight cutoffs all depend on "whose midnight?" — currently implicit local-device-time. Cheap to decide now, painful after Android ships and users travel across timezones. |
 | Friends: day-detail bottom sheet on calendar tap | Frontend | Journey's calendar grid currently looks tappable but isn't — from the screen review. |
 | Friends: one-emoji reactions to a logged✓ badge | Frontend/Backend | Smallest possible social feature; needs a small reactions table + RLS. |
-| Friends: nudge cooldown + "Nudged ✓" sent-state | Frontend | Nudge button currently gives no feedback that it worked. |
+| Friends: nudge cooldown + "Nudged ✓" sent-state | Frontend | Nudge button still gives no visual feedback that it worked (email notification now sends, but the button itself doesn't reflect state). |
+| Env vars for nudge emails: `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | Infra | **Needs the founder to add these in Vercel** — code shipped this session but won't send until these three are set (service-role key to resolve a friend's email, Resend API key + verified from-address to send the notification). |
 | Friends: mutual-streak explainer + richer empty state | Frontend | "Mutual streak" is never defined on-screen; empty state should sell the privacy model harder. |
 | Coach: checkable plan items instead of text blob | Frontend/Backend | Turns Coach from a reading screen into a doing screen — checking an item off could write the same field Home does. Highest-value single Coach feature from the review. |
 | Coach: staleness indicator, loading state, Q&A history | Frontend | A week-old plan looks identical to a fresh one; the Claude call has no loading state today. |
@@ -63,6 +64,9 @@ Reactive fixes and a full screen-by-screen UX review came up mid-session and got
   - Profile: replaced native `prompt()` custom-section dialogs with a proper bottom sheet (`Sheet` component, reusable); confirmed and surfaced that Future You chips already feed the Coach prompt; added "used by Coach" tags on the fields Claude actually reads
   - First-time-user onboarding: one-screen name+aspiration setup gate (skipped automatically for existing users via a migration check), 3 sequential dismissible coach marks (mood row, Journey tab, Friends tab), replayable via a new Help & Tips sheet in Profile
 - Everything **not** in the top-5 (listed individually under Next above) was deferred rather than bundled into the same push, to keep the diff reviewable
+- **Nudge → email notification**: new `/api/notify-nudge` route (service-role lookup of the friend's email + Resend API send), triggered after a successful nudge insert. Blocked on the three env vars flagged under Next until the founder adds them.
+- **Friend-visible profile photo**: `public_profiles.photo_path` column + a storage policy scoped *only* to `profile-photo-%` filenames (not custom-section images, which can hold sensitive attachments) so friends can see an uploaded photo without widening the private-attachments privacy boundary.
+- **Coach output formatting**: custom lightweight markdown renderer (headers/bullets/tables/bold — not a new npm dependency), tightened and restructured prompts asking for tables/bullets instead of prose, plus Copy and Download-as-image buttons on every generated result.
 
 ## How "keeping you true to it" works
 

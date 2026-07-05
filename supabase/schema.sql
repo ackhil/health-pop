@@ -56,12 +56,14 @@ create table if not exists nudges (
   primary key (from_id, to_id, nudge_date)
 );
 
--- Public display info friends are allowed to see (name + evo stage).
+-- Public display info friends are allowed to see (name + evo stage + optional profile photo path).
 create table if not exists public_profiles (
   user_id uuid primary key references auth.users(id) on delete cascade,
   display_name text not null default 'Friend',
-  evo_stage int not null default 0
+  evo_stage int not null default 0,
+  photo_path text
 );
+alter table public_profiles add column if not exists photo_path text;
 
 -- Daily per-user call count for the AI coach — the rate limit for /api/coach.
 create table if not exists coach_usage (
@@ -210,3 +212,13 @@ create policy "own attachments write" on storage.objects
 drop policy if exists "own attachments delete" on storage.objects;
 create policy "own attachments delete" on storage.objects
   for delete using (bucket_id = 'attachments' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- Friends may read ONLY profile-photo files (never custom-section images, which can hold
+-- sensitive attachments like scans) — scoped by filename prefix, not just the owner folder.
+drop policy if exists "friends read profile photo" on storage.objects;
+create policy "friends read profile photo" on storage.objects
+  for select using (
+    bucket_id = 'attachments'
+    and storage.filename(name) like 'profile-photo-%'
+    and are_friends(auth.uid(), ((storage.foldername(name))[1])::uuid)
+  );

@@ -1,6 +1,41 @@
 "use client";
-import React, { useState } from "react";
-import { C, Face, Pill, Tile } from "../design";
+import React, { useState, useRef } from "react";
+import { toPng } from "html-to-image";
+import { C, Face, Pill, Tile, Markdown } from "../design";
+
+function ResultCard({ bg, text, onRefresh, refreshing, filename }) {
+  const ref = useRef(null);
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* clipboard unavailable */ }
+  };
+  const download = async () => {
+    if (!ref.current) return;
+    const url = await toPng(ref.current, { pixelRatio: 2, backgroundColor: bg });
+    const a = document.createElement("a");
+    a.download = `${filename}.png`;
+    a.href = url;
+    a.click();
+  };
+
+  return (
+    <Tile bg={bg} style={{ marginBottom: 12 }}>
+      <div ref={ref} style={{ padding: 2 }}>
+        <Markdown text={text} />
+      </div>
+      <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+        {onRefresh && (
+          <Pill small dark={false} style={{ background: "transparent" }} onClick={onRefresh} disabled={refreshing}>
+            {refreshing ? "Thinking…" : "Refresh ⟳"}
+          </Pill>
+        )}
+        <Pill small dark={false} style={{ background: "transparent" }} onClick={copy}>{copied ? "Copied ✓" : "Copy 📋"}</Pill>
+        <Pill small dark={false} style={{ background: "transparent" }} onClick={download}>Download 📤</Pill>
+      </div>
+    </Tile>
+  );
+}
 
 export default function Coach({ session, profile, logs }) {
   const [tab, setTab] = useState("weekly");
@@ -50,12 +85,7 @@ export default function Coach({ session, profile, logs }) {
       </div>
 
       {out[tab] ? (
-        <Tile bg={bgFor[tab]} style={{ marginBottom: 12 }}>
-          <div style={{ whiteSpace: "pre-wrap", fontSize: 15, fontWeight: 700, lineHeight: 1.65 }}>{out[tab]}</div>
-          <Pill small dark={false} style={{ marginTop: 12, background: "transparent" }} onClick={() => ask(tab)} disabled={loading}>
-            {loading ? "Thinking…" : "Refresh ⟳"}
-          </Pill>
-        </Tile>
+        <ResultCard bg={bgFor[tab]} text={out[tab]} onRefresh={() => ask(tab)} refreshing={loading} filename={`health-pop-${tab}`} />
       ) : (
         <Tile style={{ border: `2px solid ${C.line}`, textAlign: "center", marginBottom: 12, padding: 24 }}>
           <div style={{ fontSize: 36 }}>{tab === "weekly" ? "📋" : tab === "exercise" ? "🏃" : "🍽️"}</div>
@@ -67,11 +97,7 @@ export default function Coach({ session, profile, logs }) {
         </Tile>
       )}
 
-      {out.question && (
-        <Tile bg={C.blue} style={{ marginBottom: 12 }}>
-          <div style={{ whiteSpace: "pre-wrap", fontSize: 15, fontWeight: 700, lineHeight: 1.65 }}>{out.question}</div>
-        </Tile>
-      )}
+      {out.question && <ResultCard bg={C.blue} text={out.question} filename="health-pop-answer" />}
       {err && <Tile style={{ border: `2px solid ${C.orange}`, marginBottom: 12 }}><span style={{ color: C.orange, fontWeight: 800 }}>{err}</span></Tile>}
 
       <div style={{ display: "flex", gap: 8 }}>
