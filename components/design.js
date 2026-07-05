@@ -17,6 +17,8 @@ export const MOODS = {
   wink: { fill: C.pink, label: "Playful", nudge: "Great energy ⚡ Perfect day for that run." },
 };
 
+export const FUTURE_CHIPS = ["🏃 Endurance", "💪 Strength", "😴 Rested", "⚡ Energy", "🧘 Calm"];
+
 export const Face = ({ shape = "circle", fill = C.green, mood = "calm", size = 64, rotate = 0, anim = "bob", delay = 0 }) => {
   const eyes = {
     calm: <><path d="M20 28 q4 4 8 0" stroke="#141414" strokeWidth="2.5" fill="none" strokeLinecap="round"/><path d="M36 28 q4 4 8 0" stroke="#141414" strokeWidth="2.5" fill="none" strokeLinecap="round"/></>,
@@ -86,6 +88,38 @@ export const inputStyle = {
   fontSize: 16, fontFamily: font, color: C.ink, background: "#fff",
   outline: "none", width: "100%", boxSizing: "border-box", fontWeight: 700,
 };
+
+/* Bottom sheet: replaces native prompt()/confirm() dialogs so they match the design language. */
+export const Sheet = ({ open, onClose, title, children }) => {
+  if (!open) return null;
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(20,20,20,.45)", zIndex: 100, display: "flex", alignItems: "flex-end" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{
+        background: "#fff", borderRadius: "28px 28px 0 0", padding: "20px 20px calc(20px + env(safe-area-inset-bottom))",
+        width: "100%", maxWidth: 480, margin: "0 auto", maxHeight: "80vh", overflowY: "auto", boxSizing: "border-box",
+      }}>
+        <div style={{ width: 40, height: 5, background: C.line, borderRadius: 999, margin: "0 auto 14px" }} />
+        {title && <div style={{ fontSize: 18, fontWeight: 900, marginBottom: 14 }}>{title}</div>}
+        {children}
+      </div>
+    </div>
+  );
+};
+
+/* Small dismissible callout used for first-time-user coach marks. */
+export const Callout = ({ children, onDismiss, style }) => (
+  <div style={{
+    position: "absolute", zIndex: 60, background: C.ink, color: "#fff", borderRadius: 16,
+    padding: "12px 16px", fontSize: 13.5, fontWeight: 800, lineHeight: 1.4, boxShadow: "0 8px 24px rgba(0,0,0,.25)",
+    display: "flex", alignItems: "center", gap: 10, ...style,
+  }}>
+    <span style={{ flex: 1 }}>{children}</span>
+    <button onClick={onDismiss} aria-label="Dismiss tip" style={{
+      background: "rgba(255,255,255,.15)", border: "none", color: "#fff", borderRadius: 999,
+      width: 22, height: 22, fontSize: 13, fontWeight: 900, cursor: "pointer", flexShrink: 0, fontFamily: "inherit",
+    }}>✕</button>
+  </div>
+);
 
 /* streak helpers */
 export const dstr = (d) => d.toISOString().slice(0, 10);

@@ -1,11 +1,13 @@
 "use client";
 import React, { useState } from "react";
-import { C, MOODS, Face, Pill, Tile, Eyebrow, computeStreak, dstr } from "../design";
+import { C, MOODS, Face, Pill, Tile, Eyebrow, Callout, computeStreak, dstr } from "../design";
 
-export default function Home({ profile, logs, saveLog, setTab }) {
+export default function Home({ profile, logs, saveLog, setTab, onboarding, markSeen }) {
   const today = dstr(new Date());
   const todayLog = logs.find((l) => l.date === today) || {};
   const yesterday = logs[logs.length - 1] || {};
+  const hasLoggedToday = !!logs.find((l) => l.date === today);
+  const [editing, setEditing] = useState(() => !hasLoggedToday);
   const [mood, setMood] = useState(todayLog.mood || "happy");
   const [sleep, setSleep] = useState(todayLog.sleepHrs || "");
   const [steps, setSteps] = useState(todayLog.steps || "");
@@ -14,6 +16,12 @@ export default function Home({ profile, logs, saveLog, setTab }) {
 
   const logStreak = computeStreak(logs, () => true);
   const name = (profile.name || "").split(" ")[0];
+
+  const showMoodMark = onboarding && !(onboarding.seenMarks || []).includes("mood");
+  const pickMood = (key) => {
+    setMood(key);
+    if (showMoodMark) markSeen?.("mood");
+  };
 
   // goal-aware greeting
   const goalWeight = parseFloat(profile.goalWeightKg);
@@ -30,10 +38,13 @@ export default function Home({ profile, logs, saveLog, setTab }) {
     ? `Slept ${lastSleep}h — ${lastSleep >= avgSleep ? `${Math.round((lastSleep - avgSleep) * 60)}min above` : `${Math.round((avgSleep - lastSleep) * 60)}min below`} your avg ${lastSleep >= avgSleep ? "👏" : "— early night tonight? 💛"}`
     : "Log a few days and your morning brief appears here ☀️";
 
-  const quickSave = () => saveLog({
-    ...todayLog, date: today, mood,
-    sleepHrs: sleep, steps, exercised, healthyFood,
-  });
+  // streak-at-risk: evening, streak alive, nothing logged yet today
+  const showStreakRisk = !hasLoggedToday && logStreak > 0 && new Date().getHours() >= 19;
+
+  const quickSave = () => {
+    saveLog({ ...todayLog, date: today, mood, sleepHrs: sleep, steps, exercised, healthyFood });
+    setEditing(false);
+  };
 
   return (
     <div>
@@ -54,6 +65,12 @@ export default function Home({ profile, logs, saveLog, setTab }) {
           : <span style={{ fontSize: 16, color: C.sub }}>Set a goal in Profile →</span>}
       </h2>
 
+      {showStreakRisk && (
+        <Tile bg={C.orange} style={{ marginBottom: 12, padding: 13 }}>
+          <div style={{ fontSize: 14.5, fontWeight: 900, color: "#fff" }}>🔥 {logStreak}-day streak ends at midnight — log now to keep it alive.</div>
+        </Tile>
+      )}
+
       {/* morning brief */}
       <Tile bg={C.purpleSoft} style={{ marginBottom: 12 }}>
         <Eyebrow>☀️ MORNING BRIEF</Eyebrow>
@@ -61,62 +78,78 @@ export default function Home({ profile, logs, saveLog, setTab }) {
       </Tile>
 
       {/* mood chips */}
-      <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 6 }}>How are you feeling?</div>
-      <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
-        {Object.entries(MOODS).map(([key, m]) => (
-          <button key={key} onClick={() => setMood(key)} aria-label={m.label} style={{
-            background: mood === key ? C.ink : "#fff", cursor: "pointer",
-            border: `2px solid ${mood === key ? C.ink : C.line}`, borderRadius: 18,
-            padding: "9px 4px", flex: 1, fontFamily: "inherit",
-          }}>
-            <Face fill={m.fill} mood={key} size={36} anim={mood === key ? "bob" : "none"} />
-          </button>
-        ))}
+      <div style={{ position: "relative", marginBottom: showMoodMark ? 44 : 12 }}>
+        <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 6 }}>How are you feeling?</div>
+        <div style={{ display: "flex", gap: 6 }}>
+          {Object.entries(MOODS).map(([key, m]) => (
+            <button key={key} onClick={() => pickMood(key)} aria-label={m.label} style={{
+              background: mood === key ? C.ink : "#fff", cursor: "pointer",
+              border: `2px solid ${mood === key ? C.ink : C.line}`, borderRadius: 18,
+              padding: "9px 4px", flex: 1, fontFamily: "inherit",
+            }}>
+              <Face fill={m.fill} mood={key} size={36} anim={mood === key ? "bob" : "none"} />
+            </button>
+          ))}
+        </div>
+        {showMoodMark && (
+          <Callout onDismiss={() => markSeen?.("mood")} style={{ top: "100%", left: 0, right: 0, marginTop: 8 }}>
+            👆 Tap how you're feeling. That's a log.
+          </Callout>
+        )}
       </div>
 
       {/* quick log */}
-      <Tile bg={C.greenSoft} style={{ marginBottom: 12 }}>
-        <Eyebrow>⚡ QUICK LOG — today</Eyebrow>
-        <div style={{ display: "flex", gap: 8, margin: "10px 0" }}>
-          <div style={{ flex: 1, background: "#fff", borderRadius: 16, padding: 12, textAlign: "center" }}>
-            <div style={{ fontSize: 22 }}>😴</div>
-            <input value={sleep} onChange={(e) => setSleep(e.target.value)} placeholder="7.5" inputMode="decimal"
-              style={{ width: "100%", border: "none", outline: "none", fontSize: 24, fontWeight: 900, textAlign: "center", fontFamily: "inherit" }} />
-            <div style={{ fontSize: 11, fontWeight: 800, color: C.sub }}>hours</div>
+      {!editing ? (
+        <Tile bg={C.greenSoft} style={{ marginBottom: 12 }}>
+          <Eyebrow>⚡ TODAY</Eyebrow>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8 }}>
+            <div style={{ flex: 1, fontSize: 15, fontWeight: 800 }}>
+              ✓ {sleep ? `${sleep}h` : "—"} · {steps ? `${steps} steps` : "—"} {exercised ? "· moved 🏋️" : ""} {healthyFood ? "· ate well 🥗" : ""}
+            </div>
+            <Pill small dark={false} style={{ background: "#fff" }} onClick={() => setEditing(true)}>Edit</Pill>
           </div>
-          <div style={{ flex: 1, background: "#fff", borderRadius: 16, padding: 12, textAlign: "center" }}>
-            <div style={{ fontSize: 22 }}>👟</div>
-            <input value={steps} onChange={(e) => setSteps(e.target.value)} placeholder="8000" inputMode="numeric"
-              style={{ width: "100%", border: "none", outline: "none", fontSize: 24, fontWeight: 900, textAlign: "center", fontFamily: "inherit" }} />
-            <div style={{ fontSize: 11, fontWeight: 800, color: C.sub }}>steps</div>
+        </Tile>
+      ) : (
+        <Tile bg={C.greenSoft} style={{ marginBottom: 12 }}>
+          <Eyebrow>⚡ QUICK LOG — today</Eyebrow>
+          <div style={{ display: "flex", gap: 8, margin: "10px 0" }}>
+            <div style={{ flex: 1, background: "#fff", borderRadius: 16, padding: 12, textAlign: "center" }}>
+              <div style={{ fontSize: 22 }}>😴</div>
+              <input value={sleep} onChange={(e) => setSleep(e.target.value)} placeholder="7.5" inputMode="decimal"
+                style={{ width: "100%", border: "none", outline: "none", fontSize: 24, fontWeight: 900, textAlign: "center", fontFamily: "inherit" }} />
+              <div style={{ fontSize: 11, fontWeight: 800, color: C.sub }}>hours</div>
+            </div>
+            <div style={{ flex: 1, background: "#fff", borderRadius: 16, padding: 12, textAlign: "center" }}>
+              <div style={{ fontSize: 22 }}>👟</div>
+              <input value={steps} onChange={(e) => setSteps(e.target.value)} placeholder="8000" inputMode="numeric"
+                style={{ width: "100%", border: "none", outline: "none", fontSize: 24, fontWeight: 900, textAlign: "center", fontFamily: "inherit" }} />
+              <div style={{ fontSize: 11, fontWeight: 800, color: C.sub }}>steps</div>
+            </div>
           </div>
-        </div>
-        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-          {[["🏋️ Moved today", exercised, setExercised], ["🥗 Ate well", healthyFood, setHealthyFood]].map(([l, v, set]) => (
-            <button key={l} onClick={() => set(!v)} style={{
-              flex: 1, background: v ? C.ink : "#fff", color: v ? "#fff" : C.ink,
-              border: `2px solid ${v ? C.ink : C.line}`, borderRadius: 999, padding: "12px 8px",
-              fontSize: 14, fontWeight: 800, fontFamily: "inherit", cursor: "pointer",
-            }}>{l} {v ? "✓" : ""}</button>
-          ))}
-        </div>
-        <Pill small style={{ width: "100%" }} onClick={quickSave}>Save ✓ keeps 🔥 alive</Pill>
-      </Tile>
+          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+            {[["🏋️ Moved today", exercised, setExercised], ["🥗 Ate well", healthyFood, setHealthyFood]].map(([l, v, set]) => (
+              <button key={l} onClick={() => set(!v)} style={{
+                flex: 1, background: v ? C.ink : "#fff", color: v ? "#fff" : C.ink,
+                border: `2px solid ${v ? C.ink : C.line}`, borderRadius: 999, padding: "12px 8px",
+                fontSize: 14, fontWeight: 800, fontFamily: "inherit", cursor: "pointer",
+              }}>{l} {v ? "✓" : ""}</button>
+            ))}
+          </div>
+          <Pill small style={{ width: "100%" }} onClick={quickSave}>Save ✓ keeps 🔥 alive</Pill>
+        </Tile>
+      )}
 
       {/* more metrics */}
       <MoreMetrics todayLog={todayLog} today={today} saveLog={saveLog} />
 
-      {/* profile chips */}
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
-        {[
-          profile.goals && ["🎯", profile.goals.slice(0, 22), C.greenSoft],
-          profile.conditions && ["🩺", profile.conditions.slice(0, 22), C.blue],
-          profile.medications && ["💊", profile.medications.slice(0, 22), C.purpleSoft],
-          profile.allergies && ["🚫", profile.allergies.slice(0, 22), C.pink],
-        ].filter(Boolean).map(([ic, txt, bg]) => (
-          <button key={txt} onClick={() => setTab("profile")} style={{ background: bg, border: "none", borderRadius: 999, padding: "8px 14px", fontSize: 13, fontWeight: 800, fontFamily: "inherit", cursor: "pointer" }}>{ic} {txt}</button>
-        ))}
-      </div>
+      {/* goal chip */}
+      {profile.goals && (
+        <div style={{ marginTop: 12 }}>
+          <button onClick={() => setTab("profile")} style={{ background: C.greenSoft, border: "none", borderRadius: 999, padding: "8px 14px", fontSize: 13, fontWeight: 800, fontFamily: "inherit", cursor: "pointer" }}>
+            🎯 {profile.goals.slice(0, 40)}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

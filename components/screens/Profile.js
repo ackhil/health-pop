@@ -1,22 +1,21 @@
 "use client";
 import React, { useState, useRef } from "react";
 import { supabase } from "../../lib/supabase";
-import { C, MOODS, Face, Pill, Tile, Eyebrow, EvoAvatar, inputStyle, computeStreak, stageFromStreaks, dstr } from "../design";
+import { C, MOODS, Face, Pill, Tile, Eyebrow, EvoAvatar, Sheet, FUTURE_CHIPS, inputStyle, computeStreak, stageFromStreaks, dstr } from "../design";
 
 const STANDARD = [
   ["👤", "name", "Name"],
   ["🎂", "age", "Age"],
   ["📏", "heightCm", "Height (cm)"],
   ["⚖️", "goalWeightKg", "Goal weight (kg)"],
-  ["🩺", "conditions", "Current conditions"],
-  ["💊", "medications", "Medications & supplements"],
-  ["🚫", "allergies", "Allergies & intolerances"],
+  ["🩺", "conditions", "Current conditions", true],
+  ["💊", "medications", "Medications & supplements", true],
+  ["🚫", "allergies", "Allergies & intolerances", true],
   ["📋", "medicalHistory", "Medical history"],
   ["👪", "familyHistory", "Family history"],
   ["🏠", "lifestyle", "Lifestyle & habits"],
-  ["🎯", "goals", "Health & fitness goals"],
+  ["🎯", "goals", "Health & fitness goals", true],
 ];
-const FUTURE_CHIPS = ["🏃 Endurance", "💪 Strength", "😴 Rested", "⚡ Energy", "🧘 Calm"];
 
 export default function Profile({ session, profile, logs, saveProfile, flash }) {
   const [p, setP] = useState(profile);
@@ -26,6 +25,10 @@ export default function Profile({ session, profile, logs, saveProfile, flash }) 
   const fileRef = useRef(null);
   const customFileRef = useRef(null);
   const [customTarget, setCustomTarget] = useState(null);
+  const [showAddSheet, setShowAddSheet] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [newValue, setNewValue] = useState("");
+  const [showHelp, setShowHelp] = useState(false);
   const uid = session.user.id;
 
   const todayLog = logs.find((l) => l.date === dstr(new Date()));
@@ -62,11 +65,16 @@ export default function Profile({ session, profile, logs, saveProfile, flash }) 
   };
 
   const addCustom = () => {
-    const title = prompt("Name your new section (e.g. Caffeine, Knee scan):");
-    if (!title) return;
-    const value = prompt(`${title} — details (optional):`) || "";
-    const next = { ...p, custom: [...(p.custom || []), { id: Date.now().toString(36), title, value, images: [] }] };
+    if (!newTitle.trim()) return;
+    const next = { ...p, custom: [...(p.custom || []), { id: Date.now().toString(36), title: newTitle.trim(), value: newValue.trim(), images: [] }] };
     setP(next); saveProfile(next);
+    setNewTitle(""); setNewValue(""); setShowAddSheet(false);
+  };
+
+  const replayTour = () => {
+    saveProfile({ ...p, onboarding: { ...p.onboarding, seenMarks: [] } });
+    setShowHelp(false);
+    flash("Tour reset — tips will show again ✨");
   };
 
   return (
@@ -131,17 +139,22 @@ export default function Profile({ session, profile, logs, saveProfile, flash }) 
         <div style={{ fontSize: 11, color: C.sub, fontWeight: 700, marginTop: 10, textAlign: "center" }}>
           Streaks evolve your avatar — energy & confidence, never body shape. 💛
         </div>
+        <div style={{ fontSize: 11, color: C.sub, fontWeight: 700, marginTop: 4, textAlign: "center" }}>
+          💬 Your coach tailors plans toward the chips you select.
+        </div>
       </Tile>
 
       {/* standard questions */}
       <Eyebrow>STANDARD HEALTH QUESTIONS</Eyebrow>
       <div style={{ marginTop: 8, marginBottom: 12 }}>
-        {STANDARD.map(([ic, key, label]) => (
+        {STANDARD.map(([ic, key, label, usedByCoach]) => (
           <div key={key} style={{ background: "#fff", border: `2px solid ${C.line}`, borderRadius: 20, padding: "13px 14px", marginBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }} onClick={() => setEditing(editing === key ? null : key)}>
               <span style={{ fontSize: 22 }}>{ic}</span>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 15, fontWeight: 900 }}>{label}</div>
+                <div style={{ fontSize: 15, fontWeight: 900 }}>
+                  {label} {usedByCoach && <span style={{ background: C.blue, borderRadius: 999, padding: "2px 8px", fontSize: 10, fontWeight: 800, marginLeft: 4 }}>💬 used by Coach</span>}
+                </div>
                 <div style={{ fontSize: 13, color: C.sub, fontWeight: 700 }}>{p[key] || "Tap to add"}</div>
               </div>
               <span style={{ background: p[key] ? C.greenSoft : "#F5F3F8", borderRadius: 999, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 900 }}>
@@ -178,12 +191,41 @@ export default function Profile({ session, profile, logs, saveProfile, flash }) 
             </div>
           </div>
         ))}
-        <button onClick={addCustom} style={{ width: "100%", background: "transparent", border: `2px dashed ${C.sub}`, borderRadius: 20, padding: 15, fontSize: 15, fontWeight: 900, color: C.sub, fontFamily: "inherit", cursor: "pointer" }}>
+        <button onClick={() => setShowAddSheet(true)} style={{ width: "100%", background: "transparent", border: `2px dashed ${C.sub}`, borderRadius: 20, padding: 15, fontSize: 15, fontWeight: 900, color: C.sub, fontFamily: "inherit", cursor: "pointer" }}>
           ＋ Add your own · text or 📷
         </button>
       </div>
 
-      <Pill dark={false} small style={{ width: "100%", marginTop: 16 }} onClick={() => supabase.auth.signOut()}>Sign out</Pill>
+      <Sheet open={showAddSheet} onClose={() => setShowAddSheet(false)} title="New section">
+        <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 6, textAlign: "left" }}>Name (e.g. Caffeine, Knee scan)</div>
+        <input autoFocus style={{ ...inputStyle, marginBottom: 12 }} value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
+        <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 6, textAlign: "left" }}>Details (optional)</div>
+        <textarea style={{ ...inputStyle, minHeight: 60, marginBottom: 14 }} value={newValue} onChange={(e) => setNewValue(e.target.value)} />
+        <div style={{ display: "flex", gap: 8 }}>
+          <Pill small dark={false} style={{ flex: 1 }} onClick={() => setShowAddSheet(false)}>Cancel</Pill>
+          <Pill small style={{ flex: 1 }} disabled={!newTitle.trim()} onClick={addCustom}>Save ✓</Pill>
+        </div>
+      </Sheet>
+
+      <button onClick={() => setShowHelp(true)} style={{ width: "100%", background: "#fff", border: `2px solid ${C.line}`, borderRadius: 20, padding: "13px 14px", marginTop: 16, fontSize: 15, fontWeight: 900, color: C.ink, fontFamily: "inherit", cursor: "pointer", textAlign: "left" }}>
+        ❓ Help & Tips
+      </button>
+      <Pill dark={false} small style={{ width: "100%", marginTop: 8 }} onClick={() => supabase.auth.signOut()}>Sign out</Pill>
+
+      <Sheet open={showHelp} onClose={() => setShowHelp(false)} title="Help & Tips">
+        <Pill small style={{ width: "100%", marginBottom: 14 }} onClick={replayTour}>↻ Replay the app tour</Pill>
+        <div style={{ fontSize: 14, fontWeight: 900, marginBottom: 4 }}>How stages & streaks work</div>
+        <div style={{ fontSize: 13, color: C.sub, fontWeight: 700, marginBottom: 14, lineHeight: 1.5 }}>
+          Every 5 combined streak-days across logging, exercise, and healthy eating evolves your avatar one stage, up to stage 6. It's attributes only — energy, confidence — never body shape.
+        </div>
+        <div style={{ fontSize: 14, fontWeight: 900, marginBottom: 4 }}>How friend privacy works</div>
+        <div style={{ fontSize: 13, color: C.sub, fontWeight: 700, marginBottom: 14, lineHeight: 1.5 }}>
+          Friends only ever see your mood and whether you logged, exercised, or ate well that day — never your raw health data, conditions, medications, or notes.
+        </div>
+        <div style={{ fontSize: 11, color: C.sub, fontWeight: 700, lineHeight: 1.5 }}>
+          Health Pop is general wellness guidance, not a medical device or medical advice.
+        </div>
+      </Sheet>
     </div>
   );
 }
