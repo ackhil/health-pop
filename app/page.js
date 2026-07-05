@@ -15,10 +15,17 @@ function AuthGate() {
   const [err, setErr] = useState("");
   const send = async () => {
     setErr("");
-    const { error } = await supabase.auth.signInWithOtp({
-      email, options: { emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined },
-    });
-    error ? setErr(error.message) : setSent(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email, options: { emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined },
+      });
+      if (error) throw error;
+      setSent(true);
+    } catch (e) {
+      console.error("Magic link send failed:", e);
+      const readable = e?.message && !e.message.trim().startsWith("{");
+      setErr(readable ? e.message : "Couldn't send the sign-in email right now — please try again shortly.");
+    }
   };
   return (
     <div style={{ fontFamily: font, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>

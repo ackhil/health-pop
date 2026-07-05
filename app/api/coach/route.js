@@ -1,5 +1,8 @@
 // Server-side only — ANTHROPIC_API_KEY never reaches the browser.
 import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+
+const DAILY_COACH_LIMIT = 30;
 
 const MODES = {
   weekly: `Give personalized weekly recommendations. Structure:
@@ -13,6 +16,28 @@ Keep each line short and icon-led.`,
 
 export async function POST(req) {
   try {
+    const authHeader = req.headers.get("authorization") || "";
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    if (!token) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+
+    const userClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      { global: { headers: { Authorization: `Bearer ${token}` } } }
+    );
+
+    const { data: userData, error: userError } = await userClient.auth.getUser(token);
+    if (userError || !userData?.user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+
+    const { data: usageCount, error: usageError } = await userClient.rpc("increment_coach_usage");
+    if (usageError) {
+      console.error("Coach usage check failed:", usageError);
+      return NextResponse.json({ error: "Coach unavailable" }, { status: 502 });
+    }
+    if (usageCount > DAILY_COACH_LIMIT) {
+      return NextResponse.json({ error: "Daily coach limit reached — try again tomorrow." }, { status: 429 });
+    }
+
     const { profile, logs, mode, question } = await req.json();
     const recent = (logs || []).slice(-14);
 

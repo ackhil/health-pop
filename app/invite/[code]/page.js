@@ -11,16 +11,22 @@ export default function InvitePage() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
-        // remember the invite, then send them to sign in
-        localStorage.setItem("pendingInvite", code);
-        setStatus("signin");
-        return;
+      try {
+        const { data, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+        if (!data.session) {
+          // remember the invite, then send them to sign in
+          localStorage.setItem("pendingInvite", code);
+          setStatus("signin");
+          return;
+        }
+        const { data: res, error } = await supabase.rpc("accept_invite", { invite_code: code });
+        if (error) throw error;
+        setStatus(res === "ok" ? "ok" : res === "self" ? "self" : "invalid");
+      } catch (e) {
+        console.error("Invite acceptance failed:", e);
+        setStatus("error");
       }
-      const { data: res, error } = await supabase.rpc("accept_invite", { invite_code: code });
-      if (error || res !== "ok") setStatus(res === "self" ? "self" : "invalid");
-      else setStatus("ok");
     })();
   }, [code]);
 
@@ -30,6 +36,7 @@ export default function InvitePage() {
     ok: ["🤝", "You're connected! Streaks start today."],
     self: ["😄", "That's your own invite link!"],
     invalid: ["😕", "This invite is invalid or expired. Ask your friend for a new one."],
+    error: ["⚠️", "Something went wrong checking this invite. Please try again in a moment."],
   }[status];
 
   return (

@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { C, Face, Pill, Tile } from "../design";
 
-export default function Coach({ profile, logs }) {
+export default function Coach({ session, profile, logs }) {
   const [tab, setTab] = useState("weekly");
   const [out, setOut] = useState({});
   const [loading, setLoading] = useState(false);
@@ -13,15 +13,17 @@ export default function Coach({ profile, logs }) {
     setLoading(true); setErr("");
     try {
       const r = await fetch("/api/coach", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ profile, logs, mode, question }),
       });
       const data = await r.json();
+      if (r.status === 429) throw new Error(data.error);
       if (!r.ok || !data.text) throw new Error();
       setOut((o) => ({ ...o, [question ? "question" : mode]: data.text }));
       if (question) setQ("");
-    } catch {
-      setErr("Coach is unavailable — try again in a moment.");
+    } catch (e) {
+      setErr(e?.message || "Coach is unavailable — try again in a moment.");
     } finally { setLoading(false); }
   };
 
