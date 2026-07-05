@@ -21,7 +21,7 @@ function AuthGate() {
         email,
         options: {
           emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
-          data: inviterName ? { inviter_name: inviterName } : undefined,
+          data: { inviter_name: inviterName || "" },
         },
       });
       if (error) throw error;
