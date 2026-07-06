@@ -190,7 +190,7 @@ export default function App() {
           onboarding={profile.onboarding} markSeen={markSeen}
         />
       </main>
-      <div style={{ position: "fixed", bottom: 88, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 420, padding: "0 16px", zIndex: 55 }}>
+      <div style={{ position: "fixed", bottom: 88, left: 0, right: 0, margin: "0 auto", width: "100%", maxWidth: 420, padding: "0 16px", zIndex: 55, boxSizing: "border-box" }}>
         {showJourneyMark && (
           <Callout onDismiss={() => markSeen("journey")} style={{ position: "static", marginBottom: 8 }}>
             👆 Check Journey — your avatar grows here. A 3-day streak unlocks the first evolution.
@@ -202,7 +202,7 @@ export default function App() {
           </Callout>
         )}
       </div>
-      <nav style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, background: C.ink, display: "flex", justifyContent: "space-around", padding: "12px 6px calc(10px + env(safe-area-inset-bottom))", borderRadius: "26px 26px 0 0" }}>
+      <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, margin: "0 auto", width: "100%", maxWidth: 480, boxSizing: "border-box", background: C.ink, display: "flex", justifyContent: "space-around", padding: "12px 6px calc(10px + env(safe-area-inset-bottom))", borderRadius: "26px 26px 0 0" }}>
         {nav.map(([id, label, Icon]) => {
           const active = tab === id;
           const color = active ? C.green : "rgba(255,255,255,0.45)";
