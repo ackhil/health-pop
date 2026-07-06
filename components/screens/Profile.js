@@ -2,6 +2,7 @@
 import React, { useState, useRef } from "react";
 import { supabase } from "../../lib/supabase";
 import { C, MOODS, Face, Pill, Tile, Eyebrow, EvoAvatar, Sheet, FUTURE_CHIPS, inputStyle, computeStreak, stageFromStreaks, dstr } from "../design";
+import FeedbackSheet from "../FeedbackSheet";
 
 const STANDARD = [
   ["👤", "name", "Name"],
@@ -29,6 +30,7 @@ export default function Profile({ session, profile, logs, saveProfile, flash }) 
   const [newTitle, setNewTitle] = useState("");
   const [newValue, setNewValue] = useState("");
   const [showHelp, setShowHelp] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
   const uid = session.user.id;
 
   const todayLog = logs.find((l) => l.date === dstr(new Date()));
@@ -210,7 +212,12 @@ export default function Profile({ session, profile, logs, saveProfile, flash }) 
       <button onClick={() => setShowHelp(true)} style={{ width: "100%", background: "#fff", border: `2px solid ${C.line}`, borderRadius: 20, padding: "13px 14px", marginTop: 16, fontSize: 15, fontWeight: 900, color: C.ink, fontFamily: "inherit", cursor: "pointer", textAlign: "left" }}>
         ❓ Help & Tips
       </button>
+      <button onClick={() => setShowFeedback(true)} style={{ width: "100%", background: "#fff", border: `2px solid ${C.line}`, borderRadius: 20, padding: "13px 14px", marginTop: 8, fontSize: 15, fontWeight: 900, color: C.ink, fontFamily: "inherit", cursor: "pointer", textAlign: "left" }}>
+        💬 Send Feedback
+      </button>
       <Pill dark={false} small style={{ width: "100%", marginTop: 8 }} onClick={() => supabase.auth.signOut()}>Sign out</Pill>
+
+      <FeedbackSheet open={showFeedback} onClose={() => setShowFeedback(false)} session={session} />
 
       <Sheet open={showHelp} onClose={() => setShowHelp(false)} title="Help & Tips">
         <Pill small style={{ width: "100%", marginBottom: 14 }} onClick={replayTour}>↻ Replay the app tour</Pill>
