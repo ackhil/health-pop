@@ -73,6 +73,17 @@ create table if not exists coach_usage (
   primary key (user_id, usage_date)
 );
 
+-- Daily per-IP call count, keyed by route — defense in depth against one IP spinning up many
+-- accounts to bypass per-user limits. No RLS policies granted on purpose: only the
+-- security-definer RPC below can touch this table, never a direct client query.
+create table if not exists ip_rate_limit (
+  ip text not null,
+  route text not null,
+  usage_date date not null default current_date,
+  count int not null default 0,
+  primary key (ip, route, usage_date)
+);
+
 -- ---------- trigger: logs -> daily_summary ----------
 create or replace function sync_daily_summary() returns trigger as $$
 begin
@@ -131,6 +142,18 @@ begin
 end;
 $$ language plpgsql security definer;
 
+-- ---------- IP rate limit (atomic increment, returns whether still under p_limit) ----------
+create or replace function increment_ip_rate_limit(p_ip text, p_route text, p_limit int) returns boolean as $$
+declare new_count int;
+begin
+  insert into ip_rate_limit (ip, route, usage_date, count)
+  values (p_ip, p_route, current_date, 1)
+  on conflict (ip, route, usage_date) do update set count = ip_rate_limit.count + 1
+  returning count into new_count;
+  return new_count <= p_limit;
+end;
+$$ language plpgsql security definer;
+
 -- helper: are two users friends?
 create or replace function are_friends(a uuid, b uuid) returns boolean as $$
   select exists (
@@ -148,6 +171,9 @@ alter table invites enable row level security;
 alter table nudges enable row level security;
 alter table public_profiles enable row level security;
 alter table coach_usage enable row level security;
+alter table ip_rate_limit enable row level security;
+-- No policies on ip_rate_limit, deliberately: only increment_ip_rate_limit() (security definer,
+-- bypasses RLS as the function owner) can touch it. No direct client access, ever.
 
 -- sensitive: owner only
 drop policy if exists "own profile" on profiles;

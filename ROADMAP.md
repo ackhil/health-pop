@@ -16,6 +16,19 @@ This file is the source of truth for what we're building next and in what order.
 | Error monitoring (Sentry or similar) | Infra | ⬜ Not started | The Resend SMTP outage was only caught because a user hit it and reported it — still no automated alerting. |
 | Move `schema.sql` → Supabase CLI migrations | Infra/Backend | ⬜ Not started | `schema.sql` was made idempotent (safe to re-run) this session, but it's still one hand-pasted file, not versioned migrations. |
 
+## Security (tracked separately — reviewed 2026-07-06)
+
+| Item | Status | Notes |
+|---|---|---|
+| Auth-gate + rate-limit `/api/coach` | ✅ Done | JWT required, 30/day/user via `coach_usage`. |
+| Server-side re-verification on `/api/notify-nudge` | ✅ Done | Friendship re-checked server-side before using the service-role key; not trusted from the client. |
+| HTML-escape user-controlled text in transactional emails | ✅ Done | `display_name` was being interpolated raw into the nudge notification email HTML — a stored HTML-injection vector. Fixed; audit any future email template the same way before shipping it. |
+| IP-based rate limiting on `/api/coach` and `/api/notify-nudge` | ✅ Done | Reused the existing Postgres-counter pattern (`coach_usage`) rather than adding Upstash/Vercel KV — no new service, no new free-tier ceiling to track. New `ip_rate_limit` table + `increment_ip_rate_limit()` RPC, RLS-locked with zero policies so only the RPC can touch it. Coach capped at 100/day/IP, notify-nudge at 20/day/IP. Fails open on a DB error since the pre-existing per-user check already fails closed. |
+| Check/tune Supabase Auth rate limits | ⬜ **Needs the founder to check** | Dashboard → Authentication → Rate Limits — this is the real backstop against magic-link/signup spam and isn't configurable from code. Confirm the defaults fit expected traffic. |
+| Global error boundary + Sentry | ⬜ Not started | Same item as under Now — flagged again here since unhandled errors/lack of alerting are a security-monitoring gap, not just a UX one. |
+| Session storage is `localStorage`, not httpOnly cookies | ⬜ Not urgent | Standard for `supabase-js` browser clients; fine given no user-controlled raw-HTML rendering exists in the app today (React escapes everywhere checked). Reassess if that changes. Would mean migrating to `@supabase/ssr`. |
+| Invite-code creation has no per-user rate limit | ⬜ Low priority | Cheap DB writes, unbounded growth possible but not a data-exposure risk. |
+
 ## Next (1–3 months)
 
 | Item | Area | Notes |
