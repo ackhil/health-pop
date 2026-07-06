@@ -1,3 +1,5 @@
+import { Analytics } from '@vercel/analytics/next';
+
 export const metadata = {
   title: "Health Pop",
   description: "Your health, one log at a time",
@@ -19,7 +21,10 @@ export default function RootLayout({ children }) {
           ::placeholder { color: #A9A5B3; font-weight: 600; }
         `}</style>
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
