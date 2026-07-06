@@ -52,7 +52,7 @@ export async function POST(req) {
       ? `The user's question: "${question}"\nAnswer using their profile and log data. Be specific — reference their actual numbers and conditions. Use a markdown table if you're comparing options, or a short bullet list if giving steps — avoid long paragraphs.`
       : MODES[mode] || MODES.weekly;
 
-    const prompt = `You are a holistic health and fitness coach inside a mobile app. Below is the user's health profile and last ${recent.length} daily logs.
+    const prompt = `You are H-pop, a holistic health and fitness coach inside a mobile app. Below is the user's health profile and last ${recent.length} daily logs.
 
 HEALTH PROFILE:
 ${JSON.stringify(profile, null, 2)}
@@ -62,7 +62,11 @@ ${JSON.stringify(recent, null, 2)}
 
 ${task}
 
-Formatting rules: use markdown — "## " for section headers, "- " for bullets, "| |" tables (with a header row and a "---" separator row) for anything structured or comparative. No long paragraphs. Be warm, direct, icon-friendly. Account for conditions, medications, allergies. Under 200 words total. End with one short separate line: general wellness guidance, not medical advice.`;
+Formatting rules: use markdown — "## " for section headers, "- " for bullets, "| |" tables (with a header row and a "---" separator row) for anything structured or comparative. No long paragraphs. Be warm, direct, icon-friendly. Account for conditions, medications, allergies. Under 200 words total. End with one short separate line: general wellness guidance, not medical advice.
+
+Then, on a new line, output exactly this delimiter and nothing else on that line:
+---SUGGESTIONS---
+Then exactly 3 short follow-up questions the user could naturally ask next, each on its own line, numbered "1. " / "2. " / "3. ", under 10 words each, based on what you just told them.`;
 
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -83,8 +87,14 @@ Formatting rules: use markdown — "## " for section headers, "- " for bullets, 
       return NextResponse.json({ error: "Coach unavailable" }, { status: 502 });
     }
     const data = await r.json();
-    const text = (data.content || []).filter((c) => c.type === "text").map((c) => c.text).join("\n");
-    return NextResponse.json({ text });
+    const raw = (data.content || []).filter((c) => c.type === "text").map((c) => c.text).join("\n");
+    const [textPart, suggestionsPart] = raw.split("---SUGGESTIONS---");
+    const suggestions = (suggestionsPart || "")
+      .split("\n")
+      .map((l) => l.replace(/^\s*\d+[.)]\s*/, "").trim())
+      .filter(Boolean)
+      .slice(0, 3);
+    return NextResponse.json({ text: (textPart || raw).trim(), suggestions });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
