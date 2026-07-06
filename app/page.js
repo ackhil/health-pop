@@ -218,11 +218,8 @@ export default function App() {
                 background: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
                 display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "0 6px",
               }}>
-                <div className="coach-pop" style={{
-                  width: 54, height: 54, borderRadius: 999, background: active ? C.purple : C.purpleSoft,
-                  border: `3px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center", marginTop: -24,
-                }}>
-                  <Icon active={true} color={active ? "#fff" : C.ink} size={27} />
+                <div className="coach-pop" style={{ marginTop: -26 }}>
+                  <Face shape="circle" fill={C.yellow} mood="wink" size={56} anim="none" />
                 </div>
                 <span style={{ fontSize: 10.5, fontWeight: 900, color: active ? C.green : "#fff", marginTop: -2 }}>{label}</span>
               </button>
