@@ -1,8 +1,10 @@
 // Server-side only — ANTHROPIC_API_KEY never reaches the browser.
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getClientIp, checkIpLimit } from "../../../lib/rateLimit";
 
 const DAILY_COACH_LIMIT = 30;
+const DAILY_IP_LIMIT = 100;
 
 const MODES = {
   weekly: `Give personalized weekly recommendations as three sections, each a "## " heading followed by a bullet list:
@@ -16,6 +18,11 @@ Each bullet under 12 words.`,
 
 export async function POST(req) {
   try {
+    const anonClient = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+    const ip = getClientIp(req);
+    const underIpLimit = await checkIpLimit(anonClient, ip, "coach", DAILY_IP_LIMIT);
+    if (!underIpLimit) return NextResponse.json({ error: "Too many requests from this network — try again tomorrow." }, { status: 429 });
+
     const authHeader = req.headers.get("authorization") || "";
     const token = authHeader.replace(/^Bearer\s+/i, "");
     if (!token) return NextResponse.json({ error: "Sign in required" }, { status: 401 });

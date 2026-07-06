@@ -1,9 +1,19 @@
 // Server-side only — SUPABASE_SERVICE_ROLE_KEY and RESEND_API_KEY never reach the browser.
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getClientIp, checkIpLimit } from "../../../lib/rateLimit";
+
+const DAILY_IP_LIMIT = 20;
+
+const escapeHtml = (str) => String(str).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 export async function POST(req) {
   try {
+    const anonClient = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+    const ip = getClientIp(req);
+    const underIpLimit = await checkIpLimit(anonClient, ip, "notify-nudge", DAILY_IP_LIMIT);
+    if (!underIpLimit) return NextResponse.json({ error: "Too many requests from this network — try again tomorrow." }, { status: 429 });
+
     const authHeader = req.headers.get("authorization") || "";
     const token = authHeader.replace(/^Bearer\s+/i, "");
     if (!token) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
@@ -25,7 +35,8 @@ export async function POST(req) {
     if (friendError || !isFriend) return NextResponse.json({ error: "Not friends" }, { status: 403 });
 
     const { data: fromPub } = await userClient.from("public_profiles").select("display_name").eq("user_id", fromUser.id).maybeSingle();
-    const fromName = fromPub?.display_name || "A friend";
+    const fromNameRaw = fromPub?.display_name || "A friend";
+    const fromName = escapeHtml(fromNameRaw);
 
     // Service-role client only to resolve the recipient's email (auth.users isn't otherwise queryable) — never sent to the browser.
     const adminClient = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
@@ -41,7 +52,7 @@ export async function POST(req) {
       body: JSON.stringify({
         from: process.env.RESEND_FROM_EMAIL,
         to: toUserData.user.email,
-        subject: `👋 ${fromName} nudged you on Health Pop`,
+        subject: `👋 ${fromNameRaw} nudged you on Health Pop`,
         html: `<div style="font-family:Arial,sans-serif;padding:32px 16px;background:#EFEAF4"><div style="max-width:420px;margin:0 auto;background:#fff;border-radius:24px;padding:28px;text-align:center"><div style="font-size:40px;margin-bottom:8px">👋</div><h2 style="margin:0 0 8px;color:#141414">${fromName} nudged you!</h2><p style="color:#6E6B78;font-weight:600;margin:0 0 20px">Your streak's waiting — a quick log keeps it alive.</p><a href="${process.env.NEXT_PUBLIC_SITE_URL || "https://health-pop-mauve.vercel.app"}" style="display:inline-block;background:#141414;color:#fff;text-decoration:none;border-radius:999px;padding:14px 28px;font-weight:800;font-size:15px">Open Health Pop →</a></div></div>`,
       }),
     });

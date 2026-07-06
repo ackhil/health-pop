@@ -7,7 +7,10 @@ function FriendAvatar({ friend, size }) {
   const [url, setUrl] = useState(null);
   useEffect(() => {
     if (!friend.photoPath) { setUrl(null); return; }
-    supabase.storage.from("attachments").createSignedUrl(friend.photoPath, 3600).then(({ data }) => data && setUrl(data.signedUrl));
+    supabase.storage.from("attachments").createSignedUrl(friend.photoPath, 3600).then(({ data, error }) => {
+      if (error) { console.error("Friend photo signed URL failed:", error); return; }
+      setUrl(data.signedUrl);
+    });
   }, [friend.photoPath]);
   if (url) return <img src={url} alt={friend.name} style={{ width: size, height: size, borderRadius: 999, objectFit: "cover", border: `2px solid ${C.line}` }} />;
   return <EvoAvatar stage={friend.stage} size={size} anim="none" />;
