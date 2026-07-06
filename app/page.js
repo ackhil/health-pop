@@ -136,11 +136,13 @@ export default function App() {
   };
 
   const markSeen = (id) => {
-    const seenMarks = profile.onboarding?.seenMarks || [];
-    if (seenMarks.includes(id)) return;
-    const next = { ...profile, onboarding: { ...profile.onboarding, seenMarks: [...seenMarks, id] } };
-    setProfile(next);
-    supabase.from("profiles").upsert({ user_id: session.user.id, data: next, updated_at: new Date().toISOString() });
+    setProfile((prev) => {
+      const seenMarks = prev.onboarding?.seenMarks || [];
+      if (seenMarks.includes(id)) return prev;
+      const next = { ...prev, onboarding: { ...prev.onboarding, seenMarks: [...seenMarks, id] } };
+      supabase.from("profiles").upsert({ user_id: session.user.id, data: next, updated_at: new Date().toISOString() });
+      return next;
+    });
   };
 
   const saveLog = async (entry) => {
@@ -161,17 +163,19 @@ export default function App() {
   const nav = [
     ["home", "Home", IconHome],
     ["journal", "Journey", IconBook],
+    ["coach", "H-pop", IconChat],
     ["friends", "Friends", IconPeople],
-    ["coach", "Coach", IconChat],
     ["profile", "Profile", IconPerson],
   ];
 
   const seenMarks = profile.onboarding?.seenMarks || [];
+  const showProfileMark = tab !== "profile" && seenMarks.includes("mood") && !seenMarks.includes("profile");
   const showJourneyMark = tab !== "journal" && logs.length >= 1 && !seenMarks.includes("journey");
   const showFriendsMark = tab !== "friends" && logs.length >= 3 && !seenMarks.includes("friends") && seenMarks.includes("journey");
 
   const goTab = (id) => {
     setTab(id);
+    if (id === "profile") markSeen("profile");
     if (id === "journal") markSeen("journey");
     if (id === "friends") markSeen("friends");
   };
@@ -191,6 +195,11 @@ export default function App() {
         />
       </main>
       <div style={{ position: "fixed", bottom: 88, left: 0, right: 0, margin: "0 auto", width: "100%", maxWidth: 420, padding: "0 16px", zIndex: 55, boxSizing: "border-box" }}>
+        {showProfileMark && (
+          <Callout onDismiss={() => markSeen("profile")} style={{ position: "static", marginBottom: 8 }}>
+            👆 Add your health details in Profile — it helps H-pop give better advice.
+          </Callout>
+        )}
         {showJourneyMark && (
           <Callout onDismiss={() => markSeen("journey")} style={{ position: "static", marginBottom: 8 }}>
             👆 Check Journey — your avatar grows here. A 3-day streak unlocks the first evolution.
@@ -202,9 +211,22 @@ export default function App() {
           </Callout>
         )}
       </div>
-      <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, margin: "0 auto", width: "100%", maxWidth: 480, boxSizing: "border-box", background: C.ink, display: "flex", justifyContent: "space-around", padding: "12px 6px calc(10px + env(safe-area-inset-bottom))", borderRadius: "26px 26px 0 0" }}>
+      <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, margin: "0 auto", width: "100%", maxWidth: 480, boxSizing: "border-box", background: C.ink, display: "flex", justifyContent: "space-around", alignItems: "flex-end", padding: "12px 6px calc(10px + env(safe-area-inset-bottom))", borderRadius: "26px 26px 0 0" }}>
         {nav.map(([id, label, Icon]) => {
           const active = tab === id;
+          if (id === "coach") {
+            return (
+              <button key={id} onClick={() => goTab(id)} aria-label={label} style={{
+                background: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "0 6px",
+              }}>
+                <div className="coach-pop" style={{ width: 56, height: 56, marginTop: -26, lineHeight: 0 }}>
+                  <Face shape="circle" fill={C.green} mood="wink" size={56} anim="none" />
+                </div>
+                <span style={{ fontSize: 10.5, fontWeight: 900, color: active ? C.green : "#fff", marginTop: -2 }}>{label}</span>
+              </button>
+            );
+          }
           const color = active ? C.green : "rgba(255,255,255,0.45)";
           return (
             <button key={id} onClick={() => goTab(id)} aria-label={label} style={{

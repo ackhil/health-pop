@@ -36,7 +36,7 @@ export async function POST(req) {
     });
     if (insertError) {
       console.error("Feedback insert failed:", insertError);
-      return NextResponse.json({ error: "Couldn't save feedback" }, { status: 502 });
+      return NextResponse.json({ error: `Couldn't save feedback: ${insertError.message} (${insertError.code || "no code"})` }, { status: 502 });
     }
 
     let attachmentUrl = null;

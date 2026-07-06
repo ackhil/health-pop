@@ -32,8 +32,9 @@ export default function Friends({ session, flash }) {
     const { data: pubs } = await supabase.from("public_profiles").select("*").in("user_id", ids);
     const since = new Date(); since.setDate(since.getDate() - 60);
     const { data: sums } = await supabase.from("daily_summary")
-      .select("user_id, log_date, logged, mood").in("user_id", [...ids, uid])
+      .select("user_id, log_date, logged, mood, exercised, healthy_food").in("user_id", [...ids, uid])
       .gte("log_date", dstr(since)).order("log_date");
+    const last7 = new Set(Array.from({ length: 7 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - i); return dstr(d); }));
     const { data: nudges } = await supabase.from("nudges").select("from_id").eq("to_id", uid).eq("nudge_date", today);
     setNudgedBy((nudges || []).map((n) => n.from_id));
 
@@ -51,8 +52,12 @@ export default function Friends({ session, flash }) {
       let mutual = 0; const md = new Date();
       if (!(theirDates.has(dstr(md)) && mySums.has(dstr(md)))) md.setDate(md.getDate() - 1);
       while (theirDates.has(dstr(md)) && mySums.has(dstr(md))) { mutual++; md.setDate(md.getDate() - 1); }
+      // momentum: non-identifiable directional signal — how many of the last 7 days they moved
+      // or ate well, bucketed into 3 labels. Never reveals their actual goal or raw numbers.
+      const activeDays = theirs.filter((s) => last7.has(s.log_date) && (s.exercised || s.healthy_food)).length;
+      const momentum = activeDays >= 5 ? "Strong 🔥" : activeDays >= 2 ? "Building 📈" : "Just started 🌱";
       const pub = (pubs || []).find((p) => p.user_id === id) || {};
-      return { id, name: pub.display_name || "Friend", stage: pub.evo_stage || 0, photoPath: pub.photo_path || null, streak, mutual, loggedToday, todayMood };
+      return { id, name: pub.display_name || "Friend", stage: pub.evo_stage || 0, photoPath: pub.photo_path || null, streak, mutual, loggedToday, todayMood, momentum };
     }).sort((a, b) => b.mutual - a.mutual);
     setFriends(list);
   };
@@ -104,6 +109,7 @@ export default function Friends({ session, flash }) {
           </div>
           <div style={{ fontSize: 16, fontWeight: 900, marginTop: 8 }}>You & {best.name}</div>
           <div style={{ fontSize: 13, color: C.sub, fontWeight: 700 }}>{best.mutual} days logging together</div>
+          <div style={{ fontSize: 11, fontWeight: 800, marginTop: 4, background: "#fff", display: "inline-block", borderRadius: 999, padding: "3px 10px" }}>{best.name}'s momentum: {best.momentum}</div>
           {!best.loggedToday && (
             <button onClick={() => nudge(best.id, best.name)} style={{ background: "#fff", border: "none", borderRadius: 14, padding: "10px 16px", marginTop: 10, fontSize: 14, fontWeight: 800, fontFamily: "inherit", cursor: "pointer" }}>
               ⏰ {best.name} hasn't logged today — nudge 👋
@@ -115,7 +121,10 @@ export default function Friends({ session, flash }) {
       {friends.slice(best ? 1 : 0).map((f) => (
         <div key={f.id} style={{ background: "#fff", border: `2px solid ${C.line}`, borderRadius: 20, padding: "12px 14px", marginBottom: 8, display: "flex", alignItems: "center", gap: 12 }}>
           <FriendAvatar friend={f} size={44} />
-          <div style={{ fontSize: 16, fontWeight: 900 }}>{f.name}</div>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 900 }}>{f.name}</div>
+            <div style={{ fontSize: 10.5, color: C.sub, fontWeight: 800 }}>{f.momentum}</div>
+          </div>
           <div style={{ marginLeft: "auto", textAlign: "right" }}>
             <div style={{ fontSize: 16, fontWeight: 900 }}>🔥 {f.streak}</div>
             {f.loggedToday

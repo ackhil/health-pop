@@ -43,12 +43,30 @@ export default function Journal({ logs, profile }) {
     a.click();
   };
 
+  const sharePoster = async () => {
+    if (!posterRef.current) return;
+    const caption = `🔥 ${logStreak}-day streak · 👟 ${totalSteps.toLocaleString()} steps · 😊 Mostly ${MOODS[topMood].label} this month — tracked with Health Pop`;
+    try {
+      const dataUrl = await toPng(posterRef.current, { pixelRatio: 2 });
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], `health-pop-${monthKey}.png`, { type: "image/png" });
+      if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
+        await navigator.share({ files: [file], title: "My Health Pop progress", text: caption });
+        return;
+      }
+    } catch (e) {
+      if (e?.name === "AbortError") return; // user cancelled the share sheet, not an error
+      console.error("Share failed, falling back to download:", e);
+    }
+    downloadPoster();
+  };
+
   return (
     <div>
       <div style={{ fontSize: 22, fontWeight: 900, textAlign: "center", marginBottom: 12 }}>📖 Journey</div>
 
       {/* journey to future you */}
-      <Tile bg={C.purpleSoft} style={{ marginBottom: 12, textAlign: "center", padding: 14 }}>
+      <Tile bg={C.blue} style={{ marginBottom: 12, textAlign: "center", padding: 14 }}>
         <Eyebrow>YOUR JOURNEY · STAGE {stage + 1} OF 6</Eyebrow>
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", margin: "12px 4px 6px" }}>
           {[0, 1, 2, 3, 4, 5].map((s) => (
@@ -117,9 +135,10 @@ export default function Journal({ logs, profile }) {
               <div style={{ fontSize: 10, opacity: 0.5, textAlign: "center", marginTop: 10, fontWeight: 700 }}>moods only · no medical data</div>
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-              <Pill small style={{ flex: 1 }} onClick={downloadPoster}>Download PNG 📤</Pill>
-              <Pill small dark={false} style={{ flex: 1 }} onClick={() => setPoster(false)}>Back</Pill>
+              <Pill small style={{ flex: 1 }} onClick={sharePoster}>Share 📤</Pill>
+              <Pill small dark={false} style={{ flex: 1 }} onClick={downloadPoster}>Download</Pill>
             </div>
+            <Pill small dark={false} style={{ width: "100%", marginTop: 8 }} onClick={() => setPoster(false)}>Back</Pill>
           </>
         ) : (
           <>
