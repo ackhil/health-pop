@@ -8,15 +8,67 @@ const STANDARD = [
   ["👤", "name", "Name"],
   ["🎂", "age", "Age"],
   ["📏", "heightCm", "Height (cm)"],
-  ["⚖️", "goalWeightKg", "Goal weight (kg)"],
-  ["🩺", "conditions", "Current conditions", true],
-  ["💊", "medications", "Medications & supplements", true],
-  ["🚫", "allergies", "Allergies & intolerances", true],
-  ["📋", "medicalHistory", "Medical history"],
-  ["👪", "familyHistory", "Family history"],
-  ["🏠", "lifestyle", "Lifestyle & habits"],
-  ["🎯", "goals", "Health & fitness goals", true],
+  ["⚖️", "goalWeightKg", "Goal weight (kg)", false, "Your target, not your current weight"],
+  ["🩺", "conditions", "Current conditions", true, "e.g. \"I have knee pain, I sleep well\""],
+  ["💊", "medications", "Medications & supplements", true, "e.g. \"Metformin 500mg twice daily\""],
+  ["🚫", "allergies", "Allergies & intolerances", true, "e.g. \"Peanuts, shellfish — avoid in meal plans\""],
+  ["📋", "medicalHistory", "Medical history", false, "e.g. \"Knee surgery 2019, nothing else major\""],
+  ["👪", "familyHistory", "Family history", false, "e.g. \"Father: type 2 diabetes\""],
+  ["🏠", "lifestyle", "Lifestyle & habits", false, "e.g. \"Desk job, sit most of the day\""],
+  ["🎯", "goals", "Health & fitness goals", true, "e.g. \"Lose 5kg, build strength, sleep better\""],
 ];
+
+function CustomMetricCard({ metric, onAnswer }) {
+  const [val, setVal] = useState("");
+  const answers = metric.answers || [];
+  const latest = answers[answers.length - 1];
+  const history = answers.slice(0, -1).slice(-3).reverse();
+  const submit = () => { if (!val.trim()) return; onAnswer(val); setVal(""); };
+  return (
+    <div style={{ background: "#fff", border: `2px solid ${C.line}`, borderRadius: 20, padding: "13px 14px", marginBottom: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+        <span style={{ fontSize: 22 }}>📊</span>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 15, fontWeight: 900 }}>{metric.question}</div>
+          <div style={{ fontSize: 13, color: C.sub, fontWeight: 700 }}>
+            {latest ? `Latest: ${latest.value} · ${latest.date}` : "No answers logged yet"}
+          </div>
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <input value={val} onChange={(e) => setVal(e.target.value)} placeholder="Log today's answer…"
+          onKeyDown={(e) => e.key === "Enter" && submit()}
+          style={{ flex: 1, border: `2px solid ${C.line}`, borderRadius: 12, padding: "8px 12px", fontSize: 14, fontWeight: 700, fontFamily: "inherit", outline: "none" }} />
+        <Pill small onClick={submit}>Log ✓</Pill>
+      </div>
+      {history.length > 0 && (
+        <div style={{ fontSize: 11, color: C.sub, fontWeight: 700, marginTop: 8, lineHeight: 1.6 }}>
+          {history.map((a, i) => <div key={i}>{a.date}: {a.value}</div>)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Backward-compat for custom sections created before the recurring-metric redesign.
+function LegacyCustomSection({ c }) {
+  return (
+    <div style={{ background: "#fff", border: `2px solid ${C.line}`, borderRadius: 20, padding: "13px 14px", marginBottom: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <span style={{ fontSize: 22 }}>📌</span>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 15, fontWeight: 900 }}>{c.title}</div>
+          <div style={{ fontSize: 13, color: C.sub, fontWeight: 700 }}>{c.value || "—"}</div>
+        </div>
+      </div>
+      {(c.images || []).length > 0 && (
+        <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+          {c.images.map((path) => <SignedThumb key={path} path={path} />)}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Profile({ session, profile, logs, saveProfile, flash }) {
   const [p, setP] = useState(profile);
@@ -24,11 +76,9 @@ export default function Profile({ session, profile, logs, saveProfile, flash }) 
   const [avatarMode, setAvatarMode] = useState(p.photoPath ? "photo" : "mood");
   const [photoUrl, setPhotoUrl] = useState(null);
   const fileRef = useRef(null);
-  const customFileRef = useRef(null);
-  const [customTarget, setCustomTarget] = useState(null);
   const [showAddSheet, setShowAddSheet] = useState(false);
-  const [newTitle, setNewTitle] = useState("");
-  const [newValue, setNewValue] = useState("");
+  const [newQuestion, setNewQuestion] = useState("");
+  const [newAnswer, setNewAnswer] = useState("");
   const [showHelp, setShowHelp] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const uid = session.user.id;
@@ -51,26 +101,26 @@ export default function Profile({ session, profile, logs, saveProfile, flash }) 
     setP(next); saveProfile(next); setAvatarMode("photo");
   };
 
-  const uploadCustomImage = async (file, fieldId) => {
-    const path = `${uid}/custom-${fieldId}-${Date.now()}.jpg`;
-    const { error } = await supabase.storage.from("attachments").upload(path, file);
-    if (error) return flash("Upload failed");
-    const custom = (p.custom || []).map((c) => c.id === fieldId ? { ...c, images: [...(c.images || []), path] } : c);
-    const next = { ...p, custom };
-    setP(next); saveProfile(next);
-  };
-
   const toggleFuture = (chip) => {
     const cur = p.futureYou || [];
     const next = { ...p, futureYou: cur.includes(chip) ? cur.filter((c) => c !== chip) : [...cur, chip] };
     setP(next); saveProfile(next);
   };
 
-  const addCustom = () => {
-    if (!newTitle.trim()) return;
-    const next = { ...p, custom: [...(p.custom || []), { id: Date.now().toString(36), title: newTitle.trim(), value: newValue.trim(), images: [] }] };
+  const addCustomMetric = () => {
+    if (!newQuestion.trim()) return;
+    const answers = newAnswer.trim() ? [{ date: dstr(new Date()), value: newAnswer.trim() }] : [];
+    const next = { ...p, custom: [...(p.custom || []), { id: Date.now().toString(36), question: newQuestion.trim(), answers }] };
     setP(next); saveProfile(next);
-    setNewTitle(""); setNewValue(""); setShowAddSheet(false);
+    setNewQuestion(""); setNewAnswer(""); setShowAddSheet(false);
+  };
+
+  const addAnswer = (metricId, value) => {
+    const custom = (p.custom || []).map((c) => c.id === metricId
+      ? { ...c, answers: [...(c.answers || []), { date: dstr(new Date()), value }] }
+      : c);
+    const next = { ...p, custom };
+    setP(next); saveProfile(next);
   };
 
   const replayTour = () => {
@@ -81,11 +131,9 @@ export default function Profile({ session, profile, logs, saveProfile, flash }) 
 
   return (
     <div>
-      {/* hidden file inputs */}
+      {/* hidden file input */}
       <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }}
         onChange={(e) => e.target.files[0] && uploadPhoto(e.target.files[0])} />
-      <input ref={customFileRef} type="file" accept="image/*" style={{ display: "none" }}
-        onChange={(e) => e.target.files[0] && customTarget && uploadCustomImage(e.target.files[0], customTarget)} />
 
       {/* avatar: mood or photo */}
       <div style={{ textAlign: "center", marginBottom: 8 }}>
@@ -149,7 +197,7 @@ export default function Profile({ session, profile, logs, saveProfile, flash }) 
       {/* standard questions */}
       <Eyebrow>STANDARD HEALTH QUESTIONS</Eyebrow>
       <div style={{ marginTop: 8, marginBottom: 12 }}>
-        {STANDARD.map(([ic, key, label, usedByCoach]) => (
+        {STANDARD.map(([ic, key, label, usedByCoach, hint]) => (
           <div key={key} style={{ background: "#fff", border: `2px solid ${C.line}`, borderRadius: 20, padding: "13px 14px", marginBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }} onClick={() => setEditing(editing === key ? null : key)}>
               <span style={{ fontSize: 22 }}>{ic}</span>
@@ -165,8 +213,9 @@ export default function Profile({ session, profile, logs, saveProfile, flash }) 
             </div>
             {editing === key && (
               <div style={{ marginTop: 10 }}>
+                {hint && <div style={{ fontSize: 11.5, color: C.sub, fontWeight: 700, marginBottom: 6, fontStyle: "italic" }}>{hint}</div>}
                 <textarea autoFocus value={p[key] || ""} onChange={(e) => setP({ ...p, [key]: e.target.value })}
-                  style={{ ...inputStyle, minHeight: 44 }} />
+                  placeholder={hint} style={{ ...inputStyle, minHeight: 44 }} />
                 <Pill small style={{ width: "100%", marginTop: 8 }} onClick={() => { saveProfile(p); setEditing(null); }}>Save ✓</Pill>
               </div>
             )}
@@ -174,38 +223,30 @@ export default function Profile({ session, profile, logs, saveProfile, flash }) 
         ))}
       </div>
 
-      {/* custom fields with images */}
-      <Eyebrow>YOUR CUSTOM SECTIONS</Eyebrow>
+      {/* custom recurring metrics */}
+      <Eyebrow>METRICS YOU TRACK</Eyebrow>
+      <div style={{ fontSize: 12, color: C.sub, fontWeight: 700, margin: "6px 0 8px" }}>
+        Define a question once, then log an answer any time — H-pop reads your history to give better advice.
+      </div>
       <div style={{ marginTop: 8 }}>
         {(p.custom || []).map((c) => (
-          <div key={c.id} style={{ background: "#fff", border: `2px solid ${C.line}`, borderRadius: 20, padding: "13px 14px", marginBottom: 8 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <span style={{ fontSize: 22 }}>📌</span>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 15, fontWeight: 900 }}>{c.title}</div>
-                <div style={{ fontSize: 13, color: C.sub, fontWeight: 700 }}>{c.value || "—"}</div>
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-              {(c.images || []).map((path) => <SignedThumb key={path} path={path} />)}
-              <button onClick={() => { setCustomTarget(c.id); customFileRef.current.click(); }}
-                style={{ width: 64, height: 64, borderRadius: 14, border: `2px dashed ${C.sub}`, background: "transparent", fontSize: 18, color: C.sub, cursor: "pointer", fontFamily: "inherit" }}>📷＋</button>
-            </div>
-          </div>
+          c.question
+            ? <CustomMetricCard key={c.id} metric={c} onAnswer={(v) => addAnswer(c.id, v)} />
+            : <LegacyCustomSection key={c.id} c={c} />
         ))}
         <button onClick={() => setShowAddSheet(true)} style={{ width: "100%", background: "transparent", border: `2px dashed ${C.sub}`, borderRadius: 20, padding: 15, fontSize: 15, fontWeight: 900, color: C.sub, fontFamily: "inherit", cursor: "pointer" }}>
-          ＋ Add your own · text or 📷
+          ＋ Track a new metric
         </button>
       </div>
 
-      <Sheet open={showAddSheet} onClose={() => setShowAddSheet(false)} title="New section">
-        <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 6, textAlign: "left" }}>Name (e.g. Caffeine, Knee scan)</div>
-        <input autoFocus style={{ ...inputStyle, marginBottom: 12 }} value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
-        <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 6, textAlign: "left" }}>Details (optional)</div>
-        <textarea style={{ ...inputStyle, minHeight: 60, marginBottom: 14 }} value={newValue} onChange={(e) => setNewValue(e.target.value)} />
+      <Sheet open={showAddSheet} onClose={() => setShowAddSheet(false)} title="Track a new metric">
+        <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 6, textAlign: "left" }}>Question (e.g. "How many days did I go to the gym?")</div>
+        <input autoFocus style={{ ...inputStyle, marginBottom: 12 }} value={newQuestion} onChange={(e) => setNewQuestion(e.target.value)} />
+        <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 6, textAlign: "left" }}>Today's answer (optional)</div>
+        <input style={{ ...inputStyle, marginBottom: 14 }} value={newAnswer} onChange={(e) => setNewAnswer(e.target.value)} />
         <div style={{ display: "flex", gap: 8 }}>
           <Pill small dark={false} style={{ flex: 1 }} onClick={() => setShowAddSheet(false)}>Cancel</Pill>
-          <Pill small style={{ flex: 1 }} disabled={!newTitle.trim()} onClick={addCustom}>Save ✓</Pill>
+          <Pill small style={{ flex: 1 }} disabled={!newQuestion.trim()} onClick={addCustomMetric}>Save ✓</Pill>
         </div>
       </Sheet>
 
@@ -221,6 +262,28 @@ export default function Profile({ session, profile, logs, saveProfile, flash }) 
 
       <Sheet open={showHelp} onClose={() => setShowHelp(false)} title="Help & Tips">
         <Pill small style={{ width: "100%", marginBottom: 14 }} onClick={replayTour}>↻ Replay the app tour</Pill>
+
+        <div style={{ fontSize: 14, fontWeight: 900, marginBottom: 4 }}>🏠 Home</div>
+        <div style={{ fontSize: 13, color: C.sub, fontWeight: 700, marginBottom: 14, lineHeight: 1.5 }}>
+          Your daily 30-second check-in — mood, sleep, steps, and whether you moved or ate well. H-pop's plan teaser lives here too, once you've generated one.
+        </div>
+        <div style={{ fontSize: 14, fontWeight: 900, marginBottom: 4 }}>📖 Journey</div>
+        <div style={{ fontSize: 13, color: C.sub, fontWeight: 700, marginBottom: 14, lineHeight: 1.5 }}>
+          Watch your avatar evolve as streaks build, browse past months, and share your progress as a poster.
+        </div>
+        <div style={{ fontSize: 14, fontWeight: 900, marginBottom: 4 }}>🤝 Friends</div>
+        <div style={{ fontSize: 13, color: C.sub, fontWeight: 700, marginBottom: 14, lineHeight: 1.5 }}>
+          Invite friends to keep each other accountable — see the privacy note below for exactly what they can see.
+        </div>
+        <div style={{ fontSize: 14, fontWeight: 900, marginBottom: 4 }}>💬 H-pop</div>
+        <div style={{ fontSize: 13, color: C.sub, fontWeight: 700, marginBottom: 14, lineHeight: 1.5 }}>
+          Your AI coach — weekly plans, exercise & meal templates, and open Q&A, built from your Profile and last 14 logs.
+        </div>
+        <div style={{ fontSize: 14, fontWeight: 900, marginBottom: 4 }}>👤 Profile</div>
+        <div style={{ fontSize: 13, color: C.sub, fontWeight: 700, marginBottom: 14, lineHeight: 1.5 }}>
+          Your health details power H-pop's advice. Track custom recurring questions here too — like "how many gym days this week" — and H-pop reads your answer history.
+        </div>
+
         <div style={{ fontSize: 14, fontWeight: 900, marginBottom: 4 }}>How stages & streaks work</div>
         <div style={{ fontSize: 13, color: C.sub, fontWeight: 700, marginBottom: 14, lineHeight: 1.5 }}>
           Every 5 combined streak-days across logging, exercise, and healthy eating evolves your avatar one stage, up to stage 6. It's attributes only — energy, confidence — never body shape.

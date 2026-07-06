@@ -62,6 +62,8 @@ ${JSON.stringify(recent, null, 2)}
 
 ${task}
 
+The profile's "custom" array (if present) holds metrics the user defined themselves — each is a question they chose to track (e.g. "How many days did I go to the gym?") with dated answers over time. Treat these as real, user-prioritized signal — reference their actual recent answers where relevant, the same way you'd reference their logs.
+
 Formatting rules: use markdown — "## " for section headers, "- " for bullets, "| |" tables (with a header row and a "---" separator row) for anything structured or comparative. No long paragraphs. Be warm, direct, icon-friendly. Account for conditions, medications, allergies. Under 200 words total. End with one short separate line: general wellness guidance, not medical advice.
 
 Then, on a new line, output exactly this delimiter and nothing else on that line:
