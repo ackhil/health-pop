@@ -80,6 +80,7 @@ Reactive fixes and a full screen-by-screen UX review came up mid-session and got
 - **Nudge → email notification**: new `/api/notify-nudge` route (service-role lookup of the friend's email + Resend API send), triggered after a successful nudge insert. Blocked on the three env vars flagged under Next until the founder adds them.
 - **Friend-visible profile photo**: `public_profiles.photo_path` column + a storage policy scoped *only* to `profile-photo-%` filenames (not custom-section images, which can hold sensitive attachments) so friends can see an uploaded photo without widening the private-attachments privacy boundary.
 - **Coach output formatting**: custom lightweight markdown renderer (headers/bullets/tables/bold — not a new npm dependency), tightened and restructured prompts asking for tables/bullets instead of prose, plus Copy and Download-as-image buttons on every generated result.
+- **Bottom nav redesign**: replaced raw emoji tab icons with a custom SVG icon set (`IconHome`/`IconBook`/`IconPeople`/`IconChat`/`IconPerson` in `design.js`) using filled-when-active/outline-when-inactive duality, plus text labels under each icon — the readability complaint was specifically about the footer being hard to read with no labels. Scoped to the nav only; other in-app emoji (Coach's tabs, screen headers) weren't touched — offered as a follow-up if wanted.
 
 ## How "keeping you true to it" works
 

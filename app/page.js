@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
-import { C, font, MOODS, Face, Pill, Tile, Callout, inputStyle, computeStreak, stageFromStreaks, dstr } from "../components/design";
+import { C, font, MOODS, Face, Pill, Tile, Callout, IconHome, IconBook, IconPeople, IconChat, IconPerson, inputStyle, computeStreak, stageFromStreaks, dstr } from "../components/design";
 import Home from "../components/screens/Home";
 import Journal from "../components/screens/Journal";
 import Friends from "../components/screens/Friends";
@@ -158,7 +158,13 @@ export default function App() {
 
   const screens = { home: Home, journal: Journal, friends: Friends, coach: Coach, profile: Profile };
   const Screen = screens[tab];
-  const nav = [["home", "🏠"], ["journal", "📖"], ["friends", "🤝"], ["coach", "💬"], ["profile", "👤"]];
+  const nav = [
+    ["home", "Home", IconHome],
+    ["journal", "Journey", IconBook],
+    ["friends", "Friends", IconPeople],
+    ["coach", "Coach", IconChat],
+    ["profile", "Profile", IconPerson],
+  ];
 
   const seenMarks = profile.onboarding?.seenMarks || [];
   const showJourneyMark = tab !== "journal" && logs.length >= 1 && !seenMarks.includes("journey");
@@ -196,13 +202,20 @@ export default function App() {
           </Callout>
         )}
       </div>
-      <nav style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, background: C.ink, display: "flex", justifyContent: "space-around", padding: "16px 8px calc(16px + env(safe-area-inset-bottom))", borderRadius: "26px 26px 0 0" }}>
-        {nav.map(([id, ic]) => (
-          <button key={id} onClick={() => goTab(id)} aria-label={id}
-            style={{ background: "none", border: "none", fontSize: 26, cursor: "pointer", opacity: tab === id ? 1 : 0.4, transition: "opacity .15s" }}>
-            {ic}
-          </button>
-        ))}
+      <nav style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, background: C.ink, display: "flex", justifyContent: "space-around", padding: "12px 6px calc(10px + env(safe-area-inset-bottom))", borderRadius: "26px 26px 0 0" }}>
+        {nav.map(([id, label, Icon]) => {
+          const active = tab === id;
+          const color = active ? C.green : "rgba(255,255,255,0.45)";
+          return (
+            <button key={id} onClick={() => goTab(id)} aria-label={label} style={{
+              background: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "2px 6px", transition: "color .15s",
+            }}>
+              <Icon active={active} color={color} size={23} />
+              <span style={{ fontSize: 10.5, fontWeight: 800, color }}>{label}</span>
+            </button>
+          );
+        })}
       </nav>
     </div>
   );

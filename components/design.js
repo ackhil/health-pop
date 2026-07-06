@@ -186,6 +186,50 @@ export const Markdown = ({ text }) => {
   );
 };
 
+/* Nav icons — Material-style duality: filled solhouette when active, outline when inactive.
+   Original glyphs (not a copied icon font), kept simple/geometric on purpose. */
+export const IconHome = ({ active, color, size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <path d="M3.5 10.5 12 3.8l8.5 6.7" stroke={color} strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
+    {active
+      ? <path d="M5.2 9.8V19a1 1 0 0 0 1 1h3.3v-4.6a2.5 2.5 0 0 1 5 0V20h3.3a1 1 0 0 0 1-1V9.8L12 4.7Z" fill={color} />
+      : <path d="M5.2 9.8V19a1 1 0 0 0 1 1h3.3v-4.6a2.5 2.5 0 0 1 5 0V20h3.3a1 1 0 0 0 1-1V9.8" stroke={color} strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />}
+  </svg>
+);
+
+export const IconBook = ({ active, color, size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <path d="M12 5.5c-1.6-1-3.8-1.4-6-1.2A1 1 0 0 0 5 5.3v12.4a1 1 0 0 0 1.1 1c2-.2 4.1.1 5.9 1.1 1.8-1 3.9-1.3 5.9-1.1a1 1 0 0 0 1.1-1V5.3a1 1 0 0 0-1-1c-2.2-.2-4.4.2-6 1.2Z"
+      fill={active ? color : "none"} stroke={color} strokeWidth={active ? 0 : 2} strokeLinejoin="round" />
+    <path d="M12 5.5v14" stroke={active ? "#fff" : color} strokeOpacity={active ? 0.55 : 0.5} strokeWidth="1.6" strokeLinecap="round" />
+  </svg>
+);
+
+export const IconPeople = ({ active, color, size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <circle cx="9" cy="8" r="3" fill={active ? color : "none"} stroke={color} strokeWidth={active ? 0 : 2} />
+    <path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5" fill={active ? color : "none"} stroke={color} strokeWidth={active ? 0 : 2} strokeLinecap="round" />
+    <circle cx="16.5" cy="9" r="2.4" fill="none" stroke={color} strokeWidth="1.8" opacity={active ? 0.85 : 0.7} />
+    <path d="M13.8 19c.3-2.2 1.9-3.8 3.9-3.8 2.3 0 4.3 1.8 4.3 4" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" opacity={active ? 0.85 : 0.7} />
+  </svg>
+);
+
+export const IconChat = ({ active, color, size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9A1.5 1.5 0 0 1 18.5 16H9l-4 4v-4H5.5A1.5 1.5 0 0 1 4 14.5Z"
+      fill={active ? color : "none"} stroke={color} strokeWidth={active ? 0 : 2} strokeLinejoin="round" />
+    {active && <><circle cx="8.5" cy="9.7" r="1.1" fill="#fff" /><circle cx="12" cy="9.7" r="1.1" fill="#fff" /><circle cx="15.5" cy="9.7" r="1.1" fill="#fff" /></>}
+  </svg>
+);
+
+export const IconPerson = ({ active, color, size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <circle cx="12" cy="7.5" r="3.5" fill={active ? color : "none"} stroke={color} strokeWidth={active ? 0 : 2} />
+    <path d="M4.5 19.2c0-3.7 3.4-6.2 7.5-6.2s7.5 2.5 7.5 6.2a1 1 0 0 1-1 1H5.5a1 1 0 0 1-1-1Z"
+      fill={active ? color : "none"} stroke={color} strokeWidth={active ? 0 : 2} strokeLinejoin="round" />
+  </svg>
+);
+
 /* streak helpers */
 export const dstr = (d) => d.toISOString().slice(0, 10);
 export const computeStreak = (logs, pred) => {
