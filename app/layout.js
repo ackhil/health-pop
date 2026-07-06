@@ -14,8 +14,8 @@ export default function RootLayout({ children }) {
           @keyframes faceBob { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-4px) } }
           @keyframes faceWiggle { 0%,100% { transform: rotate(-4deg) } 50% { transform: rotate(4deg) } }
           @keyframes facePulse { 0%,100% { transform: scale(1) } 50% { transform: scale(1.07) } }
-          @keyframes coachFloat { 0%,100% { transform: translateY(0) scale(1); box-shadow: 0 4px 14px rgba(199,182,242,.55); } 50% { transform: translateY(-4px) scale(1.07); box-shadow: 0 10px 22px rgba(199,182,242,.8); } }
-          .coach-pop { animation: coachFloat 2.4s ease-in-out infinite; }
+          @keyframes coachFloat { 0%,100% { transform: translateY(0) scale(1); box-shadow: 0 4px 14px rgba(247,212,94,.6); } 50% { transform: translateY(-4px) scale(1.07); box-shadow: 0 10px 22px rgba(247,212,94,.85); } }
+          .coach-pop { animation: coachFloat 2.4s ease-in-out infinite; border-radius: 999px; }
           @media (prefers-reduced-motion: reduce) { svg { animation: none !important } .coach-pop { animation: none !important } }
           input:focus, textarea:focus, select:focus { border-color: #141414 !important; }
           ::placeholder { color: #A9A5B3; font-weight: 600; }

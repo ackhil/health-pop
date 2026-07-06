@@ -136,11 +136,13 @@ export default function App() {
   };
 
   const markSeen = (id) => {
-    const seenMarks = profile.onboarding?.seenMarks || [];
-    if (seenMarks.includes(id)) return;
-    const next = { ...profile, onboarding: { ...profile.onboarding, seenMarks: [...seenMarks, id] } };
-    setProfile(next);
-    supabase.from("profiles").upsert({ user_id: session.user.id, data: next, updated_at: new Date().toISOString() });
+    setProfile((prev) => {
+      const seenMarks = prev.onboarding?.seenMarks || [];
+      if (seenMarks.includes(id)) return prev;
+      const next = { ...prev, onboarding: { ...prev.onboarding, seenMarks: [...seenMarks, id] } };
+      supabase.from("profiles").upsert({ user_id: session.user.id, data: next, updated_at: new Date().toISOString() });
+      return next;
+    });
   };
 
   const saveLog = async (entry) => {
@@ -218,7 +220,7 @@ export default function App() {
                 background: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
                 display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "0 6px",
               }}>
-                <div className="coach-pop" style={{ marginTop: -26 }}>
+                <div className="coach-pop" style={{ width: 56, height: 56, marginTop: -26, lineHeight: 0 }}>
                   <Face shape="circle" fill={C.yellow} mood="wink" size={56} anim="none" />
                 </div>
                 <span style={{ fontSize: 10.5, fontWeight: 900, color: active ? C.green : "#fff", marginTop: -2 }}>{label}</span>
