@@ -73,6 +73,18 @@ create table if not exists coach_usage (
   primary key (user_id, usage_date)
 );
 
+-- NPS + free-text feedback, optionally with a screenshot in the attachments bucket.
+-- Emailed as a report to FEEDBACK_REPORT_EMAIL by /api/submit-feedback; this table is
+-- the durable record (queryable directly in the Supabase Table Editor if ever needed).
+create table if not exists feedback (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  nps int not null check (nps between 0 and 10),
+  message text,
+  attachment_path text,
+  created_at timestamptz not null default now()
+);
+
 -- Daily per-IP call count, keyed by route — defense in depth against one IP spinning up many
 -- accounts to bypass per-user limits. No RLS policies granted on purpose: only the
 -- security-definer RPC below can touch this table, never a direct client query.
@@ -171,6 +183,7 @@ alter table invites enable row level security;
 alter table nudges enable row level security;
 alter table public_profiles enable row level security;
 alter table coach_usage enable row level security;
+alter table feedback enable row level security;
 alter table ip_rate_limit enable row level security;
 -- No policies on ip_rate_limit, deliberately: only increment_ip_rate_limit() (security definer,
 -- bypasses RLS as the function owner) can touch it. No direct client access, ever.
@@ -223,6 +236,11 @@ create policy "friends read public profile" on public_profiles
 -- coach_usage: owner only (written via the security-definer increment_coach_usage() RPC)
 drop policy if exists "own coach usage" on coach_usage;
 create policy "own coach usage" on coach_usage
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- feedback: owner can submit and read their own; never friend-visible
+drop policy if exists "own feedback" on feedback;
+create policy "own feedback" on feedback
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- ---------- storage: private attachments bucket ----------

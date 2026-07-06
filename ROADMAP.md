@@ -48,6 +48,8 @@ This file is the source of truth for what we're building next and in what order.
 | Coach: checkable plan items instead of text blob | Frontend/Backend | Turns Coach from a reading screen into a doing screen — checking an item off could write the same field Home does. Highest-value single Coach feature from the review. |
 | Coach: staleness indicator, loading state, Q&A history | Frontend | A week-old plan looks identical to a fresh one; the Claude call has no loading state today. |
 | Poster + invite: `navigator.share` alongside clipboard/download | Frontend | Mobile share-sheet is the organic growth channel; also a down payment on Year Wrapped (Later). |
+| Contextual NPS trigger (e.g. after a milestone streak) | Frontend | The feedback feature shipped this session is a static Profile entry point; prompting right after a positive moment would get better response rates, but needs its own trigger/cooldown logic similar to the onboarding coach-marks. |
+| `FEEDBACK_REPORT_EMAIL` env var | Infra | **Needs the founder to add this in Vercel** (value: `ackhil.n@gmail.com`) — feedback submissions save to the DB either way, but the email report only sends once this is set. |
 
 ## Later (3–6+ months)
 
@@ -81,6 +83,8 @@ Reactive fixes and a full screen-by-screen UX review came up mid-session and got
 - **Friend-visible profile photo**: `public_profiles.photo_path` column + a storage policy scoped *only* to `profile-photo-%` filenames (not custom-section images, which can hold sensitive attachments) so friends can see an uploaded photo without widening the private-attachments privacy boundary.
 - **Coach output formatting**: custom lightweight markdown renderer (headers/bullets/tables/bold — not a new npm dependency), tightened and restructured prompts asking for tables/bullets instead of prose, plus Copy and Download-as-image buttons on every generated result.
 - **Bottom nav redesign**: replaced raw emoji tab icons with a custom SVG icon set (`IconHome`/`IconBook`/`IconPeople`/`IconChat`/`IconPerson` in `design.js`) using filled-when-active/outline-when-inactive duality, plus text labels under each icon — the readability complaint was specifically about the footer being hard to read with no labels. Scoped to the nav only; other in-app emoji (Coach's tabs, screen headers) weren't touched — offered as a follow-up if wanted.
+- **Rich link previews for invites**: split `/invite/[code]/page.js` into a Server Component (personalized `generateMetadata`, reusing the existing `invite_inviter_first_name` RPC) wrapping the existing client logic (now `InviteCard.js`), plus a generated `opengraph-image.js` share card reusing the actual `Face` component's SVG paths. Hit and fixed a real Satori bug along the way (it doesn't support React Fragments) via the actual crash log, then visually confirmed the fix.
+- **Feedback feature**: new `feedback` table (NPS 0–10 + optional message + optional screenshot, owner-only RLS), `/api/submit-feedback` route (IP-rate-limited at 10/day, same pattern as `/api/coach` and `/api/notify-nudge`) that saves the submission and emails a formatted report via Resend. Entry point is a "💬 Send Feedback" row in Profile next to Help & Tips, opening a `FeedbackSheet` with the NPS grid, optional free-text box, and optional attachment upload (reuses the existing `attachments` storage bucket — no new storage policy needed since it writes to the user's own folder, already covered by the owner-only policies).
 
 ## How "keeping you true to it" works
 
