@@ -118,7 +118,7 @@ export default function Home({ profile, logs, saveLog, setTab, onboarding, markS
       </Tile>
 
       {/* H-pop plan teaser */}
-      <Tile bg={C.yellow} style={{ marginBottom: 12 }}>
+      <Tile bg={C.green} style={{ marginBottom: 12 }}>
         <Eyebrow>{weeklyPlan ? `📋 YOUR PLAN — DAY ${planDay}` : "📋 YOUR PLAN"}</Eyebrow>
         <div style={{ fontSize: 15, fontWeight: 800, lineHeight: 1.4, margin: "8px 0 10px" }}>
           {weeklyPlan ? (planExcerpt || "Check H-pop for this week's full focus.") : dayTip}
@@ -137,9 +137,11 @@ export default function Home({ profile, logs, saveLog, setTab, onboarding, markS
             <button key={key} onClick={() => pickMood(key)} aria-label={m.label} style={{
               background: mood === key ? C.ink : "#fff", cursor: "pointer",
               border: `2px solid ${mood === key ? C.ink : C.line}`, borderRadius: 18,
-              padding: "9px 4px", flex: 1, fontFamily: "inherit",
+              padding: "9px 4px 7px", flex: 1, fontFamily: "inherit",
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
             }}>
               <Face fill={m.fill} mood={key} size={36} anim={mood === key ? "bob" : "none"} />
+              <span style={{ fontSize: 9.5, fontWeight: 800, color: mood === key ? "#fff" : C.sub }}>{m.label}</span>
             </button>
           ))}
         </div>

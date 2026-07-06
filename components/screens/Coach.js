@@ -99,7 +99,7 @@ export default function Coach({ session, profile, logs, saveProfile }) {
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-        <Face shape="blob" fill={C.yellow} mood="wink" size={48} anim="wiggle" />
+        <Face shape="blob" fill={C.green} mood="wink" size={48} anim="wiggle" />
         <div>
           <div style={{ fontSize: 19, fontWeight: 900 }}>H-pop</div>
           <div style={{ fontSize: 12, color: C.sub, fontWeight: 700 }}>Built from your profile + last 14 logs</div>
@@ -127,7 +127,7 @@ export default function Coach({ session, profile, logs, saveProfile }) {
           <div style={{ fontSize: 15, fontWeight: 900, margin: "8px 0 12px" }}>
             {tab === "weekly" ? "Wins, watch points & this week's plan" : tab === "exercise" ? "A weekly plan built for your goal" : "A day of meals matched to your goal"}
           </div>
-          <Pill dark={false} style={{ background: C.yellow, border: "none", color: C.ink }} onClick={() => ask(tab)} disabled={loading}>{loading ? "Thinking…" : "Generate ✨"}</Pill>
+          <Pill dark={false} style={{ background: C.green, border: "none", color: C.ink }} onClick={() => ask(tab)} disabled={loading}>{loading ? "Thinking…" : "Generate ✨"}</Pill>
           {logs.length < 3 && <div style={{ fontSize: 12, color: C.sub, fontWeight: 700, marginTop: 10 }}>Tip: log a few days first for better advice.</div>}
         </Tile>
       )}
@@ -145,7 +145,7 @@ export default function Coach({ session, profile, logs, saveProfile }) {
           onKeyDown={(e) => e.key === "Enter" && q.trim() && ask(null, q)}
           placeholder='"How is my sleep affecting my energy?"'
           style={{ flex: 1, background: "#fff", border: `2px solid ${C.line}`, borderRadius: 999, padding: "14px 16px", fontSize: 14, fontWeight: 700, fontFamily: "inherit", outline: "none" }} />
-        <Pill small dark={false} style={{ borderRadius: 999, width: 50, padding: 0, height: 50, fontSize: 18, background: C.yellow, border: "none", color: C.ink }} onClick={() => q.trim() && ask(null, q)} disabled={loading}>↑</Pill>
+        <Pill small dark={false} style={{ borderRadius: 999, width: 50, padding: 0, height: 50, fontSize: 18, background: C.green, border: "none", color: C.ink }} onClick={() => q.trim() && ask(null, q)} disabled={loading}>↑</Pill>
       </div>
       <div style={{ fontSize: 11, color: C.sub, fontWeight: 700, textAlign: "center", marginTop: 10 }}>
         General wellness guidance from H-pop — not medical advice.

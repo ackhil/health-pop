@@ -221,7 +221,7 @@ export default function App() {
                 display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "0 6px",
               }}>
                 <div className="coach-pop" style={{ width: 56, height: 56, marginTop: -26, lineHeight: 0 }}>
-                  <Face shape="circle" fill={C.yellow} mood="wink" size={56} anim="none" />
+                  <Face shape="circle" fill={C.green} mood="wink" size={56} anim="none" />
                 </div>
                 <span style={{ fontSize: 10.5, fontWeight: 900, color: active ? C.green : "#fff", marginTop: -2 }}>{label}</span>
               </button>
